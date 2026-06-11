@@ -1359,34 +1359,61 @@
         
         function updateLayersList() {
             const listEl = document.getElementById('layers-list');
-            listEl.innerHTML = state.layers.map(layer => `
-                <div class="layer-item ${state.activeLayer === layer ? 'active' : ''}" 
-                     onclick="selectLayer('${layer.id}')">
-                    <img src="${layer.image_base64 || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect width=%2240%22 height=%2240%22 fill=%22%23333%22/></svg>'}" 
-                         class="layer-thumbnail" alt="${layer.name}">
-                    <span class="layer-name">${layer.name}</span>
+            
+            // Combine and sort all items by z-index (back to front)
+            const allItems = [...state.layers, ...state.objects].sort((a, b) => a.z_index - b.z_index);
+            
+            listEl.innerHTML = allItems.map(item => {
+                const isLayer = item.type === 'image' || !item.type;
+                const isActive = isLayer ? state.activeLayer === item : state.activeObject === item;
+                const thumbnail = isLayer ? item.image_base64 : item.cropped_image_base64;
+                const name = item.name || (isLayer ? 'Image' : 'Object');
+                
+                return `
+                <div class="layer-item ${isActive ? 'active' : ''}" 
+                     onclick="${isLayer ? `selectLayer('${item.id}')` : `selectObject('${item.id}')`}">
+                    <img src="${thumbnail || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect width=%2240%22 height=%2240%22 fill=%22%23333%22/></svg>'}" 
+                         class="layer-thumbnail" alt="${name}">
+                    <span class="layer-name">${name} ${isLayer ? '' : '(obj)'}</span>
                     <div class="layer-controls">
-                        <button onclick="event.stopPropagation(); toggleLayerVisibility('${layer.id}')">
-                            ${layer.visible ? '👁️' : '👁️‍🗨'}
+                        <button onclick="event.stopPropagation(); toggleVisibility('${item.id}', '${isLayer ? 'layer' : 'object'}')">
+                            ${item.visible ? '👁️' : '👁️‍🗨'}
                         </button>
-                        <button onclick="event.stopPropagation(); deleteLayer('${layer.id}')">🗑️</button>
+                        <button onclick="event.stopPropagation(); deleteItem('${item.id}', '${isLayer ? 'layer' : 'object'}')">🗑️</button>
                     </div>
                 </div>
-            `).join('');
+            `;}).join('');
         }
         
         function selectLayer(layerId) {
             state.activeLayer = state.layers.find(l => l.id === layerId);
+            state.activeObject = null;
             updateLayersList();
             render();
         }
         
-        function toggleLayerVisibility(layerId) {
-            const layer = state.layers.find(l => l.id === layerId);
-            if (layer) {
-                layer.visible = !layer.visible;
-                updateLayersList();
-                render();
+        function selectObject(objId) {
+            state.activeObject = state.objects.find(o => o.id === objId);
+            state.activeLayer = null;
+            updateLayersList();
+            render();
+        }
+        
+        function toggleVisibility(itemId, type) {
+            if (type === 'layer') {
+                const layer = state.layers.find(l => l.id === itemId);
+                if (layer) {
+                    layer.visible = !layer.visible;
+                    updateLayersList();
+                    render();
+                }
+            } else if (type === 'object') {
+                const obj = state.objects.find(o => o.id === itemId);
+                if (obj) {
+                    obj.visible = !obj.visible;
+                    updateLayersList();
+                    render();
+                }
             }
         }
         
