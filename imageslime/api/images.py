@@ -6,6 +6,7 @@ import os
 import uuid
 import logging
 from typing import Optional, List
+from pathlib import Path
 from fastapi import APIRouter, HTTPException, status, Form, Depends, UploadFile, File
 from fastapi.responses import JSONResponse, FileResponse
 import cv2
@@ -14,7 +15,7 @@ from PIL import Image
 import io
 import base64
 
-from ..config import get_settings
+from ..config import get_settings, Settings
 from ..models import ImageLayer, ProjectState
 from ..services.segmentation import get_segmentation_service
 from pydantic import BaseModel
@@ -326,10 +327,3 @@ def _create_thumbnail(image_path: str, max_size: int = 200) -> Optional[str]:
     except Exception as e:
         logger.error(f"Failed to create thumbnail: {e}")
         return None
-
-
-from pathlib import Path
-from fastapi import Depends
-from ..config import Settings
-from pydantic import BaseModel
-from typing import Optional
