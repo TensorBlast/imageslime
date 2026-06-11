@@ -1719,32 +1719,26 @@
             state.ctx.rotate(layer.rotation * Math.PI / 180);
             state.ctx.scale(layer.scale[0], layer.scale[1]);
             
-            // Draw red semi-transparent mask
+            // Draw the mask with red overlay
             state.ctx.globalAlpha = 0.5;
-            state.ctx.fillStyle = '#ff0000';
             
-            // Draw mask using the actual mask image as a stencil
-            // First save current composite operation
-            const originalComposite = state.ctx.globalCompositeOperation;
+            // Create a temporary canvas to tint the mask red
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = bbox.x2 - bbox.x1;
+            tempCanvas.height = bbox.y2 - bbox.y1;
+            const tempCtx = tempCanvas.getContext('2d');
             
-            // Draw red rectangle
-            state.ctx.fillRect(
-                bbox.x1, bbox.y1,
-                bbox.x2 - bbox.x1,
-                bbox.y2 - bbox.y1
-            );
+            // Fill with red
+            tempCtx.fillStyle = '#ff0000';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
             
-            // Now use the mask to clip the red rectangle
-            state.ctx.globalCompositeOperation = 'destination-in';
-            state.ctx.drawImage(
-                state.segmentationPreviewMaskImg,
-                bbox.x1, bbox.y1,
-                bbox.x2 - bbox.x1,
-                bbox.y2 - bbox.y1
-            );
+            // Use mask as alpha channel (mask is white=255 on black=0)
+            tempCtx.globalCompositeOperation = 'destination-in';
+            tempCtx.drawImage(state.segmentationPreviewMaskImg, 0, 0, tempCanvas.width, tempCanvas.height);
+            tempCtx.globalCompositeOperation = 'source-over';
             
-            // Restore original composite operation
-            state.ctx.globalCompositeOperation = originalComposite;
+            // Draw the tinted mask at the correct position
+            state.ctx.drawImage(tempCanvas, bbox.x1, bbox.y1);
             state.ctx.globalAlpha = 1.0;
             
             state.ctx.restore();
