@@ -46,18 +46,28 @@ async def upload_image(
     Accepts image files (JPEG, PNG, WebP) and stores them for processing.
     """
     try:
+        logger.info(f"Upload request received: filename={file.filename}, content_type={file.content_type}, size={file.size if hasattr(file, 'size') else 'unknown'}")
+        
         # Validate file type
-        allowed_types = ["image/jpeg", "image/png", "image/webp"]
-        if file.content_type not in allowed_types:
+        allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+        allowed_extensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"]
+        
+        # Check content type or file extension
+        is_valid_type = (file.content_type in allowed_types) or \
+                        (any(file.filename.lower().endswith(ext) for ext in allowed_extensions))
+        
+        if not is_valid_type:
+            logger.warning(f"Invalid file type: {file.content_type}, filename: {file.filename}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid file type. Allowed: {', '.join(allowed_types)}"
             )
         
-        # Validate file size
-        file_size = len(await file.read())
-        file.seek(0)  # Reset file pointer
+        # Read file content once
+        file_content = await file.read()
+        file_size = len(file_content)
         
+        # Validate file size
         if file_size > settings.MAX_UPLOAD_SIZE:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -70,7 +80,7 @@ async def upload_image(
         
         # Generate unique filename
         file_ext = os.path.splitext(file.filename)[1].lower()
-        if file_ext not in ['.jpg', '.jpeg', '.png', '.webp']:
+        if file_ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
             file_ext = '.png'  # Default to PNG
         
         image_id = str(uuid.uuid4())
@@ -78,7 +88,7 @@ async def upload_image(
         
         # Save the file
         with open(image_path, "wb") as buffer:
-            buffer.write(await file.read())
+            buffer.write(file_content)
         
         # Get image dimensions
         try:
