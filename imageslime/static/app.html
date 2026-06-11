@@ -868,30 +868,7 @@
             });
         }
         
-        // OLD MULTI-POINT SYSTEM (deprecated - keeping for reference)
-        // function addSegmentationPoint(pos, layer) {
-            // Calculate position relative to layer
-            const relX = pos.x - layer.position[0];
-            const relY = pos.y - layer.position[1];
-            
-            // Start new segmentation if not already segmenting or if layer changed
-            if (!state.isSegmenting || state.segmentationLayer !== layer) {
-                // Start new segmentation session
-                state.segmentationPoints = [{ x: relX, y: relY }];
-                state.segmentationLabels = [1];
-                state.segmentationLayer = layer;
-                state.isSegmenting = true;
-                state.segmentationPreviewMask = null;
-                showStatus('Adding segmentation points... (click more or press Enter to finish)');
-            } else {
-                // Add to existing segmentation
-                state.segmentationPoints.push({ x: relX, y: relY });
-                state.segmentationLabels.push(1);
-                showStatus(`Segmentation points: ${state.segmentationPoints.length} (press Enter to finish)`);
-            }
-            
-            // Request updated mask preview
-            updateSegmentationPreview(layer);
+        // OLD MULTI-POINT SYSTEM (removed)
         // OLD SEGMENTATION FUNCTIONS (deprecated)
         // Replaced with createSegmentedObject for one-click workflow
         // function segmentAtPoint(pos, layer) { ... }
