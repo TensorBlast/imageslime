@@ -68,8 +68,8 @@ async def segment_with_points(
                 detail="Segmentation service not available"
             )
 
-        # Find the image file
-        upload_dir = os.path.join(settings.UPLOAD_DIR)
+        # Find the image file - use absolute paths
+        upload_dir = os.path.abspath(os.path.join(settings.UPLOAD_DIR))
         image_path = None
         tried_paths = []
 
@@ -171,8 +171,8 @@ async def segment_with_box(
                 detail="Segmentation service not available"
             )
 
-        # Find the image file
-        upload_dir = os.path.join(settings.UPLOAD_DIR)
+        # Find the image file - use absolute paths
+        upload_dir = os.path.abspath(os.path.join(settings.UPLOAD_DIR))
         image_path = None
         tried_paths = []
 
@@ -269,8 +269,8 @@ async def segment_with_text(
                 detail="Segmentation service not available"
             )
 
-        # Find the image file
-        upload_dir = os.path.join(settings.UPLOAD_DIR)
+        # Find the image file - use absolute paths
+        upload_dir = os.path.abspath(os.path.join(settings.UPLOAD_DIR))
         image_path = None
         tried_paths = []
 
@@ -355,8 +355,8 @@ async def segment_with_multiple_text(
                 detail="Segmentation service not available"
             )
 
-        # Find the image file
-        upload_dir = os.path.join(settings.UPLOAD_DIR)
+        # Find the image file - use absolute paths
+        upload_dir = os.path.abspath(os.path.join(settings.UPLOAD_DIR))
         image_path = None
         tried_paths = []
 
@@ -442,32 +442,32 @@ async def segment_with_multiple_text(
                 detail="Segmentation service not available"
             )
 
-        # Find the image file
-        upload_dir = os.path.join(settings.UPLOAD_DIR)
+        # Find the image file - use absolute paths
+        upload_dir = os.path.abspath(os.path.join(settings.UPLOAD_DIR))
         image_path = None
         tried_paths = []
-
+        
         for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
             path = os.path.join(upload_dir, f"{request.image_id}{ext}")
             tried_paths.append(path)
             if os.path.exists(path):
                 image_path = path
                 break
-
+        
         if image_path is None:
             logger.error(f"Segmentation text-multiple (v2): Image not found for id {request.image_id}. Tried paths: {tried_paths}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Image not found: {request.image_id}. Tried: {', '.join(os.path.basename(p) for p in tried_paths)}"
             )
-        
+
         # Clear embedding cache for this image
         cache_key_prefix = f"embeddings_{image_path}"
         keys_to_remove = [k for k in seg_service.embedding_cache.keys() if k.startswith(cache_key_prefix)]
         for key in keys_to_remove:
             del seg_service.embedding_cache[key]
         logger.debug(f"Segmentation text-multiple (v2): Cleared {len(keys_to_remove)} cache entries for {request.image_id}")
-        
+
         # Perform segmentation with multiple text prompts
         objects_by_prompt = seg_service.segment_with_multiple_text_prompts(
             image_path=image_path,
@@ -582,8 +582,8 @@ async def cut_from_image(
                 detail="Segmentation service not available"
             )
 
-        # Find the image file
-        upload_dir = os.path.join(settings.UPLOAD_DIR)
+        # Find the image file - use absolute paths
+        upload_dir = os.path.abspath(os.path.join(settings.UPLOAD_DIR))
         image_path = None
         tried_paths = []
 

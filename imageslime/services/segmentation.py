@@ -710,6 +710,10 @@ class SAM3SegmentationService:
             
             # Save the updated image as PNG to preserve transparency
             # Change the extension to .png if it's not already
+            # Ensure we're working with absolute paths
+            if not os.path.isabs(image_path):
+                image_path = os.path.abspath(image_path)
+            
             save_path = image_path
             if not image_path.lower().endswith('.png'):
                 save_path = image_path.rsplit('.', 1)[0] + '.png'

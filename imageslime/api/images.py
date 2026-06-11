@@ -75,8 +75,8 @@ async def upload_image(
                 detail=f"File too large. Max size: {settings.MAX_UPLOAD_SIZE / (1024*1024)}MB"
             )
         
-        # Create upload directory if it doesn't exist
-        upload_dir = Path(settings.UPLOAD_DIR)
+        # Create upload directory if it doesn't exist - use absolute path
+        upload_dir = Path(settings.UPLOAD_DIR).absolute()
         upload_dir.mkdir(parents=True, exist_ok=True)
         
         # Generate unique filename
