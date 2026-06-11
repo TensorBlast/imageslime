@@ -185,22 +185,9 @@ class SAM3SegmentationService:
             if labels is None:
                 labels = [1] * len(points)
             
-            # Check if we have cached embeddings
-            cache_key = f"embeddings_{image_path}_{os.path.getmtime(image_path)}"
-            predictor = None
-            
-            if use_cached_embeddings and cache_key in self.embedding_cache:
-                cached_data = self.embedding_cache[cache_key]
-                predictor = cached_data["predictor"]
-                logger.debug(f"Using cached embeddings for segmentation")
-            
             # Use the main model for prediction
-            if predictor is None:
-                predictor = self.model
-            
-            # Perform segmentation using Ultralytics SAM3 API
-            # Pass image path and prompts directly
-            results = predictor.predict(
+            # Ultralytics SAM3 handles everything internally
+            results = self.model.predict(
                 source=image_path,
                 points=sam_points,
                 labels=labels,
@@ -271,20 +258,9 @@ class SAM3SegmentationService:
             # Convert bbox to format expected by SAM
             sam_bbox = bbox.to_list()
             
-            # Check if we have cached embeddings
-            cache_key = f"embeddings_{image_path}_{os.path.getmtime(image_path)}"
-            predictor = None
-            
-            if use_cached_embeddings and cache_key in self.embedding_cache:
-                cached_data = self.embedding_cache[cache_key]
-                predictor = cached_data["predictor"]
-            
             # Use the main model for prediction
-            if predictor is None:
-                predictor = self.model
-            
-            # Perform segmentation using Ultralytics SAM3 API
-            results = predictor.predict(
+            # Ultralytics SAM3 handles everything internally
+            results = self.model.predict(
                 source=image_path,
                 bboxes=[sam_bbox],
                 conf=self.settings.SEGMENTATION_CONFIDENCE,
