@@ -449,6 +449,15 @@
         </button>
     </div>
     
+    <div id="zoom-controls" style="position: fixed; bottom: 30px; left: 20px; z-index: 100; display: flex; align-items: center; gap: 10px;">
+        <span style="color: #ccc;">Zoom:</span>
+        <input type="range" id="zoom-slider" min="0.1" max="3" step="0.1" value="1" 
+               style="width: 150px;" 
+               oninput="updateZoom(this.value)">
+        <span id="zoom-value" style="color: #ccc;">100%</span>
+        <button class="tool-btn" onclick="resetZoom()" style="padding: 5px 10px;">Reset</button>
+    </div>
+    
     <div id="status-bar">
         <span class="coords" id="mouse-coords">X: 0, Y: 0</span>
         <span id="status-message">Ready</span>
@@ -495,7 +504,9 @@
             rotationStart: 0,
             isScaling: false,
             scaleStart: { x: 0, y: 0 },
-            originalScale: [1, 1]
+            originalScale: [1, 1],
+            // Z-index counter
+            nextZIndex: 0
         };
         
         // Initialize application
@@ -650,7 +661,7 @@
                         scale: [1, 1],
                         opacity: 1,
                         visible: true,
-                        z_index: state.layers.length,
+                        z_index: state.nextZIndex++,
                         image_obj: null  // Will be loaded async
                     };
                     
@@ -850,7 +861,7 @@
                         scale: [1, 1],
                         opacity: 1,
                         visible: true,
-                        z_index: state.layers.length + state.objects.length,
+                        z_index: state.nextZIndex++,
                         cropped_image: null
                     };
                     
@@ -867,6 +878,7 @@
                     state.objects.push(obj);
                     state.activeObject = obj;
                     saveHistory();
+                    updateLayersList();
                     render();
                     showStatus('Object created!');
                 } else {
@@ -973,7 +985,9 @@
         function onWheel(e) {
             e.preventDefault();
             const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            state.scale *= delta;
+            state.scale = Math.max(0.1, Math.min(3, state.scale * delta));
+            document.getElementById('zoom-slider').value = state.scale;
+            document.getElementById('zoom-value').textContent = `${Math.round(state.scale * 100)}%`;
             render();
         }
         
@@ -1021,6 +1035,7 @@
             if (obj) {
                 state.activeObject = obj;
                 state.activeLayer = null;
+                // Position context menu at click location
                 showContextMenu(e.clientX, e.clientY, obj, 'object');
                 return;
             }
@@ -1030,6 +1045,7 @@
             if (layer) {
                 state.activeLayer = layer;
                 state.activeObject = null;
+                // Position context menu at click location
                 showContextMenu(e.clientX, e.clientY, layer, 'layer');
                 return;
             }
@@ -1048,6 +1064,20 @@
             const dx = mouseX - centerX;
             const dy = mouseY - centerY;
             return Math.atan2(dy, dx) * (180 / Math.PI);
+        }
+        
+        function updateZoom(zoomLevel) {
+            state.scale = parseFloat(zoomLevel);
+            document.getElementById('zoom-value').textContent = `${Math.round(zoomLevel * 100)}%`;
+            render();
+        }
+        
+        function resetZoom() {
+            state.scale = 1;
+            state.offset = { x: 0, y: 0 };
+            document.getElementById('zoom-slider').value = 1;
+            document.getElementById('zoom-value').textContent = '100%';
+            render();
         }
         
         function updateMouseCoords(pos) {
@@ -1175,8 +1205,14 @@
                 <div class="context-menu-item" onclick="deleteItem('${itemId}', '${type}')">Delete</div>
                 <div class="context-menu-item" onclick="copyItem('${itemId}', '${type}')">Copy</div>
             `;
-            menu.style.left = `${x}px`;
-            menu.style.top = `${y}px`;
+            
+            // Get canvas container position to adjust coordinates
+            const canvasContainer = document.getElementById('canvas-container');
+            const rect = canvasContainer.getBoundingClientRect();
+            
+            // Adjust for canvas container offset and toolbar
+            menu.style.left = `${x - rect.left}px`;
+            menu.style.top = `${y - rect.top + 50}px`;  // +50 for toolbar height
             menu.classList.add('show');
         }
         
@@ -1192,6 +1228,7 @@
                 const obj = state.objects.find(o => o.id === itemId);
                 if (obj) {
                     obj.z_index = maxZ + 1;
+                    state.nextZIndex = maxZ + 2;
                     render();
                     saveHistory();
                 }
@@ -1199,6 +1236,7 @@
                 const layer = state.layers.find(l => l.id === itemId);
                 if (layer) {
                     layer.z_index = maxZ + 1;
+                    state.nextZIndex = maxZ + 2;
                     render();
                     saveHistory();
                 }
@@ -1214,6 +1252,7 @@
                 const obj = state.objects.find(o => o.id === itemId);
                 if (obj) {
                     obj.z_index = minZ - 1;
+                    state.nextZIndex = Math.max(state.nextZIndex, minZ);
                     render();
                     saveHistory();
                 }
@@ -1221,6 +1260,7 @@
                 const layer = state.layers.find(l => l.id === itemId);
                 if (layer) {
                     layer.z_index = minZ - 1;
+                    state.nextZIndex = Math.max(state.nextZIndex, minZ);
                     render();
                     saveHistory();
                 }
@@ -1250,11 +1290,24 @@
                     const copy = JSON.parse(JSON.stringify(obj));
                     copy.id = `copy_${obj.id}_${Date.now()}`;
                     copy.position = [obj.position[0] + 20, obj.position[1] + 20];
-                    const allItems = [...state.layers, ...state.objects];
-                    copy.z_index = Math.max(...allItems.map(i => i.z_index), 0) + 1;
+                    copy.z_index = state.nextZIndex++;
+                    copy.cropped_image = null;  // Reset - will be re-loaded
+                    
+                    // Re-load the cropped image
+                    if (copy.cropped_image_base64) {
+                        const img = new Image();
+                        img.src = copy.cropped_image_base64;
+                        img.onload = function() {
+                            copy.cropped_image = img;
+                            render();
+                        };
+                        copy.cropped_image = img;
+                    }
+                    
                     state.objects.push(copy);
                     state.activeObject = copy;
                     saveHistory();
+                    updateLayersList();
                     render();
                 }
             } else if (type === 'layer') {
@@ -1263,11 +1316,24 @@
                     const copy = JSON.parse(JSON.stringify(layer));
                     copy.id = `copy_${layer.id}_${Date.now()}`;
                     copy.position = [layer.position[0] + 20, layer.position[1] + 20];
-                    const allItems = [...state.layers, ...state.objects];
-                    copy.z_index = Math.max(...allItems.map(i => i.z_index), 0) + 1;
+                    copy.z_index = state.nextZIndex++;
+                    copy.image_obj = null;  // Reset - will be re-loaded
+                    
+                    // Re-load the image
+                    if (copy.image_base64) {
+                        const img = new Image();
+                        img.src = copy.image_base64;
+                        img.onload = function() {
+                            copy.image_obj = img;
+                            render();
+                        };
+                        copy.image_obj = img;
+                    }
+                    
                     state.layers.push(copy);
                     state.activeLayer = copy;
                     saveHistory();
+                    updateLayersList();
                     render();
                 }
             }
@@ -1440,21 +1506,18 @@
             state.ctx.scale(state.scale, state.scale);
             state.ctx.translate(state.offset.x / state.scale, state.offset.y / state.scale);
             
-            // Sort layers by z-index
-            const sortedLayers = [...state.layers].sort((a, b) => a.z_index - b.z_index);
-            // Sort objects by z-index
-            const sortedObjects = [...state.objects].sort((a, b) => a.z_index - b.z_index);
+            // Combine all items and sort by z-index (back to front)
+            const allItems = [...state.layers, ...state.objects].sort((a, b) => a.z_index - b.z_index);
             
-            // Draw layers first (background)
-            for (const layer of sortedLayers) {
-                if (!layer.visible) continue;
-                drawLayer(layer);
-            }
-            
-            // Draw objects on top
-            for (const obj of sortedObjects) {
-                if (!obj.visible) continue;
-                drawObject(obj);
+            // Draw all items in z-index order
+            for (const item of allItems) {
+                if (!item.visible) continue;
+                
+                if (item.type === 'object' || item.cropped_image_base64) {
+                    drawObject(item);
+                } else {
+                    drawLayer(item);
+                }
             }
             
             // Draw active item highlight
