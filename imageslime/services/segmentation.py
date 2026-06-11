@@ -235,8 +235,8 @@ class SAM3SegmentationService:
                     # Convert mask to base64 for frontend
                     obj.mask_base64 = self._mask_to_base64(mask)
                     
-                    # Create a red RGBA preview mask for frontend
-                    obj.preview_mask_base64 = self._create_red_mask_preview(mask)
+                    # Create a red RGBA preview mask for frontend (cropped to bbox for consistency)
+                    obj.preview_mask_base64 = self._create_red_mask_preview(mask, bbox)
                     
                     logger.info(f"Segmentation successful with {len(points)} points")
                     return obj
@@ -412,15 +412,23 @@ class SAM3SegmentationService:
         mask_base64 = base64.b64encode(mask_bytes).decode('utf-8')
         return f"data:image/png;base64,{mask_base64}"
     
-    def _create_red_mask_preview(self, mask: np.ndarray) -> str:
+    def _create_red_mask_preview(self, mask: np.ndarray, bbox: np.ndarray = None) -> str:
         """Create a red RGBA mask preview with transparency.
         
-        Returns a base64 PNG where mask regions are red with 50% opacity.
+        Uses the same logic as _extract_masked_region: crops to bounding box
+        and applies mask to alpha channel with full opacity.
+        
+        Returns a base64 PNG where mask regions are red with full opacity.
         """
         # Ensure mask is binary (0 or 255)
         mask = (mask > 0).astype(np.uint8) * 255
         
-        # Create RGBA image: red with alpha from mask
+        # If bbox provided, crop mask to bounding box (same as _extract_masked_region)
+        if bbox is not None:
+            x1, y1, x2, y2 = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
+            mask = mask[y1:y2, x1:x2]
+        
+        # Create RGBA image: red with alpha from mask (full opacity)
         height, width = mask.shape
         rgba_mask = np.zeros((height, width, 4), dtype=np.uint8)
         
@@ -428,7 +436,7 @@ class SAM3SegmentationService:
         rgba_mask[..., 0] = mask  # Red channel
         rgba_mask[..., 1] = 0     # Green channel
         rgba_mask[..., 2] = 0     # Blue channel
-        rgba_mask[..., 3] = (mask > 0).astype(np.uint8) * 128  # Alpha channel (50% opacity)
+        rgba_mask[..., 3] = mask  # Alpha channel (full opacity, same as _extract_masked_region)
         
         # Encode as PNG
         _, buffer = cv2.imencode('.png', rgba_mask)
@@ -645,6 +653,102 @@ class SAM3SegmentationService:
         """Clear the embedding cache."""
         self.embedding_cache.clear()
         logger.info("Embedding cache cleared")
+    
+    def cut_from_image(
+        self, 
+        image_path: str, 
+        mask: np.ndarray,
+        fill_color: Optional[Tuple[int, int, int]] = None
+    ) -> Optional[str]:
+        """
+        Cut a region from an image using a mask.
+        Removes the masked region from the image and returns the updated image as base64.
+        
+        Args:
+            image_path: Path to the source image file
+            mask: Binary mask (H, W) where 255 = region to cut
+            fill_color: Optional RGB color to fill the cut region (default: transparent for PNG)
+            
+        Returns:
+            Updated image as base64 PNG, or None if failed
+        """
+        try:
+            # Load the original image
+            image = cv2.imread(image_path)
+            if image is None:
+                logger.error(f"Failed to load image: {image_path}")
+                return None
+            
+            logger.info(f"Cut: Original image shape: {image.shape}, path: {image_path}")
+            
+            # Ensure mask is binary
+            mask = (mask > 0).astype(np.uint8)
+            logger.info(f"Cut: Mask shape: {mask.shape}, unique values: {np.unique(mask)}")
+            
+            # Resize mask to match image if needed
+            if mask.shape != image.shape[:2]:
+                logger.info(f"Cut: Resizing mask from {mask.shape} to {image.shape[:2]}")
+                mask = cv2.resize(mask, (image.shape[1], image.shape[0]), interpolation=cv2.INTER_NEAREST)
+            
+            # Convert to BGRA to support transparency
+            if len(image.shape) == 3:
+                image_rgba = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
+            else:
+                image_rgba = cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
+            
+            # Apply mask: set alpha to 0 (transparent) where mask is 255
+            image_rgba[:, :, 3] = np.where(mask > 0, 0, image_rgba[:, :, 3])
+            logger.info(f"Cut: Applied mask - transparent pixels: {np.sum(mask > 0)}, total pixels: {mask.size}")
+            
+            # If fill color is provided, fill the region with that color
+            if fill_color is not None:
+                # Fill with the specified color where mask is 255
+                for c in range(3):  # B, G, R channels
+                    image_rgba[:, :, c] = np.where(mask > 0, fill_color[2 - c], image_rgba[:, :, c])
+                # Set alpha to 255 (opaque) for filled region
+                image_rgba[:, :, 3] = np.where(mask > 0, 255, image_rgba[:, :, 3])
+            
+            # Save the updated image as PNG to preserve transparency
+            # Change the extension to .png if it's not already
+            save_path = image_path
+            if not image_path.lower().endswith('.png'):
+                save_path = image_path.rsplit('.', 1)[0] + '.png'
+            
+            # Save the new image first before deleting the original
+            try:
+                cv2.imwrite(save_path, image_rgba)
+                logger.info(f"Cut: Saved cut image to {save_path}")
+            except Exception as e:
+                logger.error(f"Cut: Failed to save image to {save_path}: {e}")
+                return None
+            
+            # If we changed the extension, delete the original file
+            if save_path != image_path:
+                import os
+                try:
+                    os.remove(image_path)
+                    logger.info(f"Cut: Removed original file: {image_path}")
+                    # Clear embedding cache for the old path
+                    old_cache_key_prefix = f"embeddings_{image_path}"
+                    keys_to_remove = [k for k in self.embedding_cache.keys() if k.startswith(old_cache_key_prefix)]
+                    for key in keys_to_remove:
+                        del self.embedding_cache[key]
+                    logger.info(f"Cut: Cleared {len(keys_to_remove)} cache entries for old path")
+                except Exception as e:
+                    logger.warning(f"Cut: Failed to remove original file {image_path}: {e}")
+                    # Even if we can't delete the original, the new file is saved, so continue
+            
+            # Also return as base64 PNG
+            _, buffer = cv2.imencode('.png', image_rgba)
+            image_base64 = base64.b64encode(buffer.tobytes()).decode('utf-8')
+            logger.info(f"Cut: Returning base64 image of shape {image_rgba.shape}")
+            return f"data:image/png;base64,{image_base64}"
+            
+        except Exception as e:
+            logger.error(f"Failed to cut from image: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return None
     
     def segment_with_multiple_text_prompts(
         self, 

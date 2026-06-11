@@ -142,7 +142,7 @@ async def get_image(
     upload_dir = Path(settings.UPLOAD_DIR)
     
     # Find the image file
-    for ext in ['.jpg', '.jpeg', '.png', '.webp']:
+    for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
         image_path = upload_dir / f"{image_id}{ext}"
         if image_path.exists():
             return FileResponse(
@@ -170,7 +170,7 @@ async def get_thumbnail(
     
     # Find the image file
     image_path = None
-    for ext in ['.jpg', '.jpeg', '.png', '.webp']:
+    for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
         path = upload_dir / f"{image_id}{ext}"
         if path.exists():
             image_path = path
@@ -202,7 +202,7 @@ async def delete_image(
     
     # Find and delete the image file
     deleted = False
-    for ext in ['.jpg', '.jpeg', '.png', '.webp']:
+    for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
         image_path = upload_dir / f"{image_id}{ext}"
         if image_path.exists():
             image_path.unlink()
@@ -237,7 +237,7 @@ async def compute_embeddings(
         
         # Find the image file
         image_path = None
-        for ext in ['.jpg', '.jpeg', '.png', '.webp']:
+        for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
             path = upload_dir / f"{image_id}{ext}"
             if path.exists():
                 image_path = str(path)
@@ -301,7 +301,7 @@ async def list_images(
     
     images = []
     for image_file in upload_dir.glob("*"):
-        if image_file.is_file() and image_file.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']:
+        if image_file.is_file() and image_file.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
             try:
                 with Image.open(image_file) as img:
                     width, height = img.size
