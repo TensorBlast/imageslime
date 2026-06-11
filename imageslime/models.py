@@ -75,6 +75,7 @@ class SegmentedObject:
     mask: Optional[np.ndarray] = None  # Binary mask (H, W)
     mask_base64: Optional[str] = None  # Base64 encoded mask for frontend
     bounding_box: Optional[BoundingBox] = None
+    cropped_image_base64: Optional[str] = None  # Base64 encoded cropped image with transparency
     
     # Visual properties
     position: Tuple[float, float] = (0, 0)  # (x, y) position in composition
@@ -454,6 +455,7 @@ class SegmentationResult(BaseModel):
     success: bool
     object_id: Optional[str] = None
     mask_base64: Optional[str] = None
+    cropped_image_base64: Optional[str] = None
     bounding_box: Optional[BoundingBoxModel] = None
     message: Optional[str] = None
     

@@ -207,6 +207,12 @@ class SAM3SegmentationService:
                     # Get bounding box
                     bbox = result.boxes.xyxy[0].cpu().numpy() if hasattr(result, 'boxes') else None
                     
+                    if bbox is not None:
+                        # Extract the actual image region within the bounding box
+                        cropped_image_base64 = self._extract_masked_region(image_path, mask, bbox)
+                    else:
+                        cropped_image_base64 = None
+                    
                     # Create segmented object
                     obj = SegmentedObject(
                         name=f"Object_{time.time()}",
@@ -218,6 +224,7 @@ class SAM3SegmentationService:
                             x2=float(bbox[2]), 
                             y2=float(bbox[3])
                         ) if bbox is not None else None,
+                        cropped_image_base64=cropped_image_base64
                     )
                     
                     # Convert mask to base64 for frontend
@@ -396,6 +403,54 @@ class SAM3SegmentationService:
         # Convert to base64
         mask_base64 = base64.b64encode(mask_bytes).decode('utf-8')
         return f"data:image/png;base64,{mask_base64}"
+    
+    def _extract_masked_region(self, image_path: str, mask: np.ndarray, bbox: np.ndarray) -> Optional[str]:
+        """Extract the image region within the bounding box and apply the mask.
+        
+        Returns the cropped and masked image as base64 PNG.
+        """
+        try:
+            # Load the original image
+            image = cv2.imread(image_path)
+            if image is None:
+                logger.error(f"Failed to load image: {image_path}")
+                return None
+            
+            # Convert bbox to integers
+            x1, y1, x2, y2 = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
+            
+            # Crop the image to the bounding box
+            cropped = image[y1:y2, x1:x2]
+            if cropped.size == 0:
+                return None
+            
+            # Resize mask to match cropped image if needed
+            mask_cropped = mask[y1:y2, x1:x2]
+            if mask_cropped.shape != cropped.shape[:2]:
+                mask_cropped = cv2.resize(mask_cropped, (cropped.shape[1], cropped.shape[0]), interpolation=cv2.INTER_NEAREST)
+            
+            # Apply mask to the cropped image (only keep masked region, make rest transparent)
+            if len(cropped.shape) == 3:
+                # BGR image
+                masked_image = cv2.cvtColor(cropped, cv2.COLOR_BGR2BGRA)
+            else:
+                # Grayscale image
+                masked_image = cv2.cvtColor(cropped, cv2.COLOR_GRAY2BGRA)
+            
+            # Set alpha channel based on mask
+            masked_image[:, :, 3] = mask_cropped
+            
+            # Encode as PNG
+            _, buffer = cv2.imencode('.png', masked_image)
+            image_bytes = buffer.tobytes()
+            
+            # Convert to base64
+            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+            return f"data:image/png;base64,{image_base64}"
+            
+        except Exception as e:
+            logger.error(f"Failed to extract masked region: {e}")
+            return None
     
     def _base64_to_mask(self, mask_base64: str) -> Optional[np.ndarray]:
         """Convert base64 string to numpy array mask."""

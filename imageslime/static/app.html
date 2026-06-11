@@ -490,6 +490,7 @@
             segmentationLabels: [],
             segmentationLayer: null,
             segmentationPreviewMask: null,
+            segmentationPreviewCroppedImage: null,
             segmentationPreviewMaskImage: null,
             segmentationPreviewBbox: null,
             isSegmenting: false,
@@ -824,18 +825,21 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.mask_base64) {
-                    // Store preview mask
+                    // Store preview mask and cropped image
                     state.segmentationPreviewMask = data.mask_base64;
+                    state.segmentationPreviewCroppedImage = data.cropped_image_base64;
                     state.segmentationPreviewBbox = data.bounding_box;
                     
-                    // Pre-load the preview mask image
-                    const previewImg = new Image();
-                    previewImg.src = data.mask_base64;
-                    previewImg.onload = function() {
+                    // Pre-load the preview cropped image
+                    if (data.cropped_image_base64) {
+                        const previewImg = new Image();
+                        previewImg.src = data.cropped_image_base64;
+                        previewImg.onload = function() {
+                            state.segmentationPreviewMaskImage = previewImg;
+                            render();  // Re-render with loaded image
+                        };
                         state.segmentationPreviewMaskImage = previewImg;
-                        render();  // Re-render with loaded mask
-                    };
-                    state.segmentationPreviewMaskImage = previewImg;
+                    }
                     
                     render();
                     showStatus(`Segmentation preview updated (${state.segmentationPoints.length} points)`);
@@ -873,6 +877,7 @@
                     source_image_id: layer.id,
                     source_image_path: layer.image_path,
                     mask_base64: state.segmentationPreviewMask,
+                    cropped_image_base64: state.segmentationPreviewCroppedImage,
                     bounding_box: state.segmentationPreviewBbox,
                     position: [pos.x, pos.y],
                     rotation: 0,
@@ -881,16 +886,20 @@
                     border_color: '#FF0000',
                     border_width: 2,
                     z_index: state.objects.length,
-                    mask_image: null  // Will be loaded async
+                    mask_image: null,
+                    cropped_image: null  // Will be loaded async
                 };
                 
-                // Pre-load the mask image
-                const maskImg = new Image();
-                maskImg.src = state.segmentationPreviewMask;
-                maskImg.onload = function() {
-                    obj.mask_image = maskImg;
-                    render();  // Re-render with the loaded mask
-                };
+                // Pre-load the cropped image (this is the actual cut-out image)
+                if (state.segmentationPreviewCroppedImage) {
+                    const croppedImg = new Image();
+                    croppedImg.src = state.segmentationPreviewCroppedImage;
+                    croppedImg.onload = function() {
+                        obj.cropped_image = croppedImg;
+                        render();
+                    };
+                    obj.cropped_image = croppedImg;
+                }
                 
                 state.objects.push(obj);
                 state.activeObject = obj;
@@ -1433,7 +1442,7 @@
         }
         
         function drawObject(obj) {
-            if (!obj.mask_base64) return;
+            if (!obj.cropped_image_base64 && !obj.mask_base64) return;
             
             // Apply object transformations
             state.ctx.save();
@@ -1441,19 +1450,19 @@
             state.ctx.rotate(obj.rotation * Math.PI / 180);
             state.ctx.scale(obj.scale[0], obj.scale[1]);
             
-            // Draw the actual mask
-            if (obj.mask_image && obj.mask_image.complete && obj.bounding_box) {
+            // Draw the cropped image (with transparency)
+            if (obj.cropped_image && obj.cropped_image.complete && obj.bounding_box) {
                 const bbox = obj.bounding_box;
-                state.ctx.globalAlpha = 0.7;
+                state.ctx.globalAlpha = obj.opacity;
                 state.ctx.drawImage(
-                    obj.mask_image,
+                    obj.cropped_image,
                     bbox.x1, bbox.y1,
                     bbox.x2 - bbox.x1,
                     bbox.y2 - bbox.y1
                 );
                 state.ctx.globalAlpha = 1.0;
             } else if (obj.bounding_box) {
-                // Fallback: draw bounding box if mask not loaded yet
+                // Fallback: draw bounding box if image not loaded yet
                 const bbox = obj.bounding_box;
                 state.ctx.fillStyle = 'rgba(255, 107, 107, 0.3)';
                 state.ctx.fillRect(
@@ -1491,7 +1500,7 @@
         }
         
         function drawSegmentationPreview() {
-            // Draw the preview mask for multi-point segmentation
+            // Draw the preview for multi-point segmentation
             const layer = state.segmentationLayer;
             if (!layer || !state.segmentationPreviewBbox) return;
             
@@ -1502,9 +1511,9 @@
             
             const bbox = state.segmentationPreviewBbox;
             
-            // Draw the mask if loaded
+            // Draw the cropped image if loaded
             if (state.segmentationPreviewMaskImage && state.segmentationPreviewMaskImage.complete) {
-                state.ctx.globalAlpha = 0.5;
+                state.ctx.globalAlpha = 0.7;
                 state.ctx.drawImage(
                     state.segmentationPreviewMaskImage,
                     bbox.x1, bbox.y1,
@@ -1521,15 +1530,6 @@
                     bbox.y2 - bbox.y1
                 );
             }
-            
-            // Draw border
-            state.ctx.strokeStyle = '#FF6B6B';
-            state.ctx.lineWidth = 2;
-            state.ctx.strokeRect(
-                bbox.x1, bbox.y1, 
-                bbox.x2 - bbox.x1, 
-                bbox.y2 - bbox.y1
-            );
             
             state.ctx.restore();
         }
