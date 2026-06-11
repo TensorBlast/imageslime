@@ -1719,27 +1719,25 @@
             state.ctx.rotate(layer.rotation * Math.PI / 180);
             state.ctx.scale(layer.scale[0], layer.scale[1]);
             
-            // Draw the mask with red overlay
+            // Draw the mask with red overlay (only on mask regions)
+            // The mask is a binary image: white=object, black=background, same size as layer image
+            // We want to tint just the white pixels red
+            
+            state.ctx.save();
             state.ctx.globalAlpha = 0.5;
             
-            // Create a temporary canvas to tint the mask red
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = bbox.x2 - bbox.x1;
-            tempCanvas.height = bbox.y2 - bbox.y1;
-            const tempCtx = tempCanvas.getContext('2d');
+            // Method: Fill with red, then use mask to keep only mask areas
+            // The mask is full image size, so draw it at (0,0) relative to the layer
+            // First fill entire layer area with red
+            state.ctx.fillStyle = '#ff0000';
+            state.ctx.fillRect(0, 0, layer.width || state.canvas.width, layer.height || state.canvas.height);
             
-            // Fill with red
-            tempCtx.fillStyle = '#ff0000';
-            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            // Use mask to clip - only keep red where mask is white
+            state.ctx.globalCompositeOperation = 'destination-in';
+            state.ctx.drawImage(state.segmentationPreviewMaskImg, 0, 0);
             
-            // Use mask as alpha channel (mask is white=255 on black=0)
-            tempCtx.globalCompositeOperation = 'destination-in';
-            tempCtx.drawImage(state.segmentationPreviewMaskImg, 0, 0, tempCanvas.width, tempCanvas.height);
-            tempCtx.globalCompositeOperation = 'source-over';
-            
-            // Draw the tinted mask at the correct position
-            state.ctx.drawImage(tempCanvas, bbox.x1, bbox.y1);
-            state.ctx.globalAlpha = 1.0;
+            state.ctx.globalCompositeOperation = 'source-over';
+            state.ctx.restore();
             
             state.ctx.restore();
         }
