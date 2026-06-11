@@ -871,6 +871,17 @@
                     state.segmentationPreviewBbox = data.bounding_box;
                     state.segmentationPreviewImage = data.cropped_image_base64;
                     
+                    // Pre-load mask image for red overlay
+                    if (data.mask_base64 && !state.segmentationPreviewMaskImg) {
+                        const maskImg = new Image();
+                        maskImg.src = data.mask_base64;
+                        maskImg.onload = function() {
+                            state.segmentationPreviewMaskImg = maskImg;
+                            render();
+                        };
+                        state.segmentationPreviewMaskImg = maskImg;
+                    }
+                    
                     // Pre-load preview image
                     if (!state.segmentationPreviewImg) {
                         const img = new Image();
@@ -947,6 +958,7 @@
             state.segmentationPreviewBbox = null;
             state.segmentationPreviewImage = null;
             state.segmentationPreviewImg = null;
+            state.segmentationPreviewMaskImg = null;
             render();
         }
         
@@ -1697,7 +1709,7 @@
         }
         
         function drawSegmentationPreview() {
-            if (!state.segmentationPreviewImg || !state.segmentationPreviewBbox || !state.segmentationLayer) return;
+            if (!state.segmentationPreviewMaskImg || !state.segmentationPreviewBbox || !state.segmentationLayer) return;
             
             const layer = state.segmentationLayer;
             const bbox = state.segmentationPreviewBbox;
@@ -1707,23 +1719,33 @@
             state.ctx.rotate(layer.rotation * Math.PI / 180);
             state.ctx.scale(layer.scale[0], layer.scale[1]);
             
-            // Draw red semi-transparent overlay on the segmented area
-            state.ctx.globalAlpha = 0.3;
+            // Draw red semi-transparent mask
+            state.ctx.globalAlpha = 0.5;
             state.ctx.fillStyle = '#ff0000';
+            
+            // Draw mask using the actual mask image as a stencil
+            // First save current composite operation
+            const originalComposite = state.ctx.globalCompositeOperation;
+            
+            // Draw red rectangle
             state.ctx.fillRect(
                 bbox.x1, bbox.y1,
                 bbox.x2 - bbox.x1,
                 bbox.y2 - bbox.y1
             );
-            state.ctx.globalAlpha = 1.0;
             
-            // Draw the preview image (already has transparency from mask)
+            // Now use the mask to clip the red rectangle
+            state.ctx.globalCompositeOperation = 'destination-in';
             state.ctx.drawImage(
-                state.segmentationPreviewImg,
+                state.segmentationPreviewMaskImg,
                 bbox.x1, bbox.y1,
                 bbox.x2 - bbox.x1,
                 bbox.y2 - bbox.y1
             );
+            
+            // Restore original composite operation
+            state.ctx.globalCompositeOperation = originalComposite;
+            state.ctx.globalAlpha = 1.0;
             
             state.ctx.restore();
         }

@@ -179,16 +179,16 @@ class SAM3SegmentationService:
         
         try:
             # Convert points to format expected by Ultralytics SAM
-            # For multiple points on the same object: points=[[[x1, y1], [x2, y2], ...]], labels=[[1, 1, ...]]
+            # For multiple points on the same object, use list of points with corresponding labels
+            # Format: points=[[x1, y1], [x2, y2], ...], labels=[1, 1, ...]
             # This tells SAM all points belong to the same object
-            if len(points) == 1:
-                # Single point - use simple format
-                sam_points = [[points[0].x, points[0].y]]
-                sam_labels = [1] if labels is None else [labels[0]]
+            sam_points = [[p.x, p.y] for p in points]
+            
+            # If no labels provided, assume all points are foreground
+            if labels is None:
+                sam_labels = [1] * len(points)
             else:
-                # Multiple points - nest them to indicate they're for the same object
-                sam_points = [[[p.x, p.y] for p in points]]
-                sam_labels = [[1] * len(points)] if labels is None else [labels]
+                sam_labels = labels
             
             # Use the main model for prediction
             # Ultralytics SAM3 handles everything internally
@@ -203,19 +203,12 @@ class SAM3SegmentationService:
             if results and len(results) > 0:
                 result = results[0]
                 
-                # Extract mask
+                # Extract mask - SAM should return one mask for all points
                 masks = result.masks.data if hasattr(result, 'masks') else None
                 if masks is not None and len(masks) > 0:
-                    # For multiple points on same object, combine all masks
-                    if len(masks) > 1:
-                        # Combine all masks using logical OR
-                        combined_mask = np.zeros_like(masks[0].cpu().numpy())
-                        for m in masks:
-                            combined_mask = np.logical_or(combined_mask, m.cpu().numpy() > 0)
-                        mask = combined_mask.astype(np.uint8) * 255
-                    else:
-                        mask = masks[0].cpu().numpy()  # Get first mask
-                        mask = (mask > 0).astype(np.uint8) * 255  # Convert to binary mask
+                    # Take the first mask (SAM should return one mask for all our points)
+                    mask = masks[0].cpu().numpy()
+                    mask = (mask > 0).astype(np.uint8) * 255  # Convert to binary mask
                     
                     # Get bounding box
                     bbox = result.boxes.xyxy[0].cpu().numpy() if hasattr(result, 'boxes') else None
