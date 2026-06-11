@@ -490,6 +490,8 @@
             segmentationLabels: [],
             segmentationLayer: null,
             segmentationPreviewMask: null,
+            segmentationPreviewMaskImage: null,
+            segmentationPreviewBbox: null,
             isSegmenting: false
         };
         
@@ -785,6 +787,16 @@
                     // Store preview mask
                     state.segmentationPreviewMask = data.mask_base64;
                     state.segmentationPreviewBbox = data.bounding_box;
+                    
+                    // Pre-load the preview mask image
+                    const previewImg = new Image();
+                    previewImg.src = data.mask_base64;
+                    previewImg.onload = function() {
+                        state.segmentationPreviewMaskImage = previewImg;
+                        render();  // Re-render with loaded mask
+                    };
+                    state.segmentationPreviewMaskImage = previewImg;
+                    
                     render();
                     showStatus(`Segmentation preview updated (${state.segmentationPoints.length} points)`);
                 } else {
@@ -828,7 +840,16 @@
                     opacity: 1,
                     border_color: '#FF0000',
                     border_width: 2,
-                    z_index: state.objects.length
+                    z_index: state.objects.length,
+                    mask_image: null  // Will be loaded async
+                };
+                
+                // Pre-load the mask image
+                const maskImg = new Image();
+                maskImg.src = state.segmentationPreviewMask;
+                maskImg.onload = function() {
+                    obj.mask_image = maskImg;
+                    render();  // Re-render with the loaded mask
                 };
                 
                 state.objects.push(obj);
@@ -1351,9 +1372,26 @@
             state.ctx.rotate(obj.rotation * Math.PI / 180);
             state.ctx.scale(obj.scale[0], obj.scale[1]);
             
-            // Draw the actual mask from base64
-            if (obj.mask_base64) {
-                drawMaskFromBase64(obj.mask_base64, obj.bounding_box);
+            // Draw the actual mask
+            if (obj.mask_image && obj.mask_image.complete && obj.bounding_box) {
+                const bbox = obj.bounding_box;
+                state.ctx.globalAlpha = 0.5;
+                state.ctx.drawImage(
+                    obj.mask_image,
+                    bbox.x1, bbox.y1,
+                    bbox.x2 - bbox.x1,
+                    bbox.y2 - bbox.y1
+                );
+                state.ctx.globalAlpha = 1.0;
+            } else if (obj.bounding_box) {
+                // Fallback: draw bounding box if mask not loaded yet
+                const bbox = obj.bounding_box;
+                state.ctx.fillStyle = 'rgba(255, 107, 107, 0.3)';
+                state.ctx.fillRect(
+                    bbox.x1, bbox.y1, 
+                    bbox.x2 - bbox.x1, 
+                    bbox.y2 - bbox.y1
+                );
             }
             
             // Draw border around the mask using bounding box
@@ -1369,50 +1407,6 @@
             }
             
             state.ctx.restore();
-        }
-        
-        function drawMaskFromBase64(maskBase64, bbox) {
-            if (!bbox) return;
-            
-            try {
-                // Create image element for the mask
-                const maskImg = new Image();
-                maskImg.src = maskBase64;
-                
-                // Wait for image to load
-                if (maskImg.complete) {
-                    // Draw the mask
-                    state.ctx.globalAlpha = 0.5;
-                    state.ctx.drawImage(
-                        maskImg,
-                        bbox.x1, bbox.y1,
-                        bbox.x2 - bbox.x1,
-                        bbox.y2 - bbox.y1
-                    );
-                    state.ctx.globalAlpha = 1.0;
-                } else {
-                    // Image not loaded yet, will be drawn on next render
-                    maskImg.onload = function() {
-                        state.ctx.globalAlpha = 0.5;
-                        state.ctx.drawImage(
-                            maskImg,
-                            bbox.x1, bbox.y1,
-                            bbox.x2 - bbox.x1,
-                            bbox.y2 - bbox.y1
-                        );
-                        state.ctx.globalAlpha = 1.0;
-                    };
-                }
-            } catch (e) {
-                console.error('Failed to draw mask:', e);
-                // Fallback to drawing bounding box
-                state.ctx.fillStyle = 'rgba(255, 107, 107, 0.3)';
-                state.ctx.fillRect(
-                    bbox.x1, bbox.y1, 
-                    bbox.x2 - bbox.x1, 
-                    bbox.y2 - bbox.y1
-                );
-            }
         }
         
         function drawObjectHighlight(obj) {
@@ -1442,7 +1436,7 @@
         function drawSegmentationPreview() {
             // Draw the preview mask for multi-point segmentation
             const layer = state.segmentationLayer;
-            if (!layer || !state.segmentationPreviewMask || !state.segmentationPreviewBbox) return;
+            if (!layer || !state.segmentationPreviewBbox) return;
             
             state.ctx.save();
             state.ctx.translate(layer.position[0], layer.position[1]);
@@ -1451,8 +1445,25 @@
             
             const bbox = state.segmentationPreviewBbox;
             
-            // Draw the actual mask from base64
-            drawMaskFromBase64(state.segmentationPreviewMask, bbox);
+            // Draw the mask if loaded
+            if (state.segmentationPreviewMaskImage && state.segmentationPreviewMaskImage.complete) {
+                state.ctx.globalAlpha = 0.5;
+                state.ctx.drawImage(
+                    state.segmentationPreviewMaskImage,
+                    bbox.x1, bbox.y1,
+                    bbox.x2 - bbox.x1,
+                    bbox.y2 - bbox.y1
+                );
+                state.ctx.globalAlpha = 1.0;
+            } else {
+                // Fallback: draw bounding box
+                state.ctx.fillStyle = 'rgba(255, 107, 107, 0.3)';
+                state.ctx.fillRect(
+                    bbox.x1, bbox.y1, 
+                    bbox.x2 - bbox.x1, 
+                    bbox.y2 - bbox.y1
+                );
+            }
             
             // Draw border
             state.ctx.strokeStyle = '#FF6B6B';
