@@ -358,9 +358,13 @@
             justify-content: center;
             border: 2px dashed #4a8ac2;
             border-radius: 10px;
-            pointer-events: auto;
+            pointer-events: none;
             opacity: 0;
             transition: opacity 0.3s;
+        }
+        
+        .upload-overlay.drag-over {
+            pointer-events: auto;
         }
         
         .upload-overlay.drag-over {

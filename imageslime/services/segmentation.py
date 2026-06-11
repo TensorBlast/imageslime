@@ -53,9 +53,21 @@ class SAM3SegmentationService:
                 # Try to use the model name directly
                 model_path = "sam3.pt"
             
-            # Initialize both models for different use cases
-            # SAM3SemanticPredictor for concept segmentation (text, exemplars)
-            # SAM for visual prompts (points, boxes) - backward compatible
+            # Initialize SAM3 model for visual prompts (points, boxes)
+            # The SAM class in Ultralytics automatically uses SAM3 when sam3.pt is loaded
+            try:
+                self.model = SAM(model_path)
+                self.model.to(self.device)
+                if self.half_precision:
+                    self.model.half()
+                logger.info("SAM3 model initialized for visual prompts")
+                self.model_loaded = True
+            except Exception as e:
+                logger.error(f"Failed to initialize SAM3 model: {e}")
+                self.model_loaded = False
+                self.model = None
+            
+            # Initialize SAM3 semantic model for text-based concept segmentation
             try:
                 self.semantic_model = SAM3SemanticPredictor(
                     overrides=dict(
@@ -65,23 +77,10 @@ class SAM3SegmentationService:
                         device=self.device,
                     )
                 )
-                logger.info("SAM3 semantic model initialized")
+                logger.info("SAM3 semantic model initialized for text prompts")
             except Exception as e:
                 logger.warning(f"Failed to initialize SAM3 semantic model: {e}")
                 self.semantic_model = None
-            
-            try:
-                # Also keep SAM for visual prompts (points/boxes)
-                self.visual_model = SAM(model_path)
-                self.visual_model.to(self.device)
-                if self.half_precision:
-                    self.visual_model.half()
-                logger.info("SAM3 visual model initialized")
-            except Exception as e:
-                logger.warning(f"Failed to initialize SAM3 visual model: {e}")
-                self.visual_model = None
-            
-            self.model_loaded = (self.semantic_model is not None) or (self.visual_model is not None)
             logger.info("SAM3 models initialized successfully")
             
         except ImportError as e:
@@ -94,11 +93,14 @@ class SAM3SegmentationService:
     
     def is_available(self) -> bool:
         """Check if the segmentation service is available."""
-        return self.model_loaded and (self.semantic_model is not None or self.visual_model is not None)
+        return self.model_loaded and (self.model is not None or self.semantic_model is not None)
     
     def compute_embeddings(self, image_path: str) -> Optional[Dict[str, Any]]:
         """
         Compute and cache embeddings for an image.
+        
+        For SAM3 with Ultralytics, we don't need to pre-compute embeddings separately.
+        The model handles this internally when set_image is called.
         
         Args:
             image_path: Path to the image file
@@ -129,17 +131,18 @@ class SAM3SegmentationService:
             # Convert to RGB (SAM expects RGB)
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             
-            # Initialize predictor for this image
+            # Create a new predictor instance for this image
+            # Note: In Ultralytics SAM, the model itself acts as the predictor
             from ultralytics.models.sam import SAM
             predictor = SAM(self.settings.SAM3_MODEL_PATH)
             predictor.to(self.device)
             if self.half_precision:
                 predictor.half()
             
-            # Set image and compute embeddings
+            # Set image - this computes and caches the embeddings internally
             predictor.set_image(image_rgb)
             
-            # Store embeddings in cache
+            # Store predictor in cache
             embeddings_data = {
                 "image_path": image_path,
                 "image_shape": image_rgb.shape,
@@ -162,6 +165,8 @@ class SAM3SegmentationService:
             
         except Exception as e:
             logger.error(f"Failed to compute embeddings for {image_path}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return None
     
     def segment_with_points(
@@ -205,9 +210,9 @@ class SAM3SegmentationService:
                 logger.debug(f"Using cached embeddings for segmentation")
             
             if predictor is None:
-                # Use the visual model if available
-                if self.visual_model is not None:
-                    predictor = self.visual_model
+                # Use the main model if available
+                if self.model is not None:
+                    predictor = self.model
                     # Load and set image
                     image = cv2.imread(image_path)
                     if image is None:
@@ -233,7 +238,6 @@ class SAM3SegmentationService:
             
             # Perform segmentation
             results = predictor.predict(
-                source=image_path,
                 points=sam_points,
                 labels=labels,
                 conf=self.settings.SEGMENTATION_CONFIDENCE,
@@ -312,9 +316,9 @@ class SAM3SegmentationService:
                 predictor = cached_data["predictor"]
             
             if predictor is None:
-                # Use the visual model if available
-                if self.visual_model is not None:
-                    predictor = self.visual_model
+                # Use the main model if available
+                if self.model is not None:
+                    predictor = self.model
                     # Load and set image
                     image = cv2.imread(image_path)
                     if image is None:
@@ -340,7 +344,6 @@ class SAM3SegmentationService:
             
             # Perform segmentation
             results = predictor.predict(
-                source=image_path,
                 bboxes=[sam_bbox],
                 conf=self.settings.SEGMENTATION_CONFIDENCE,
             )
@@ -618,11 +621,11 @@ class SAM3SegmentationService:
                 "half_precision": self.half_precision,
                 "embedding_cache_size": len(self.embedding_cache),
                 "semantic_model_available": self.semantic_model is not None,
-                "visual_model_available": self.visual_model is not None,
+                "visual_model_available": self.model is not None,
             }
             
             # Try to get model parameters for both models
-            for model_name, model in [("semantic", self.semantic_model), ("visual", self.visual_model)]:
+            for model_name, model in [("semantic", self.semantic_model), ("visual", self.model)]:
                 if model:
                     try:
                         if hasattr(model, 'model') and hasattr(model.model, 'parameters'):
