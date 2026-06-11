@@ -637,6 +637,7 @@
                     // Create layer from uploaded image
                     const layer = {
                         id: data.image_id,
+                        type: 'image',
                         name: file.name.replace(/\.[^\.]+$/, ''), // Remove extension
                         image_path: data.image_path,
                         image_base64: data.thumbnail_base64,
@@ -1027,11 +1028,22 @@
             e.preventDefault();
             const pos = getMousePos(e);
             
-            // Check if we clicked on an object
+            // Check if we clicked on an object first (objects are on top)
             const obj = getObjectAtPosition(pos);
             if (obj) {
                 state.activeObject = obj;
-                showContextMenu(e.clientX, e.clientY, obj);
+                state.activeLayer = null;
+                showContextMenu(e.clientX, e.clientY, obj, 'object');
+                return;
+            }
+            
+            // Check if we clicked on a layer
+            const layer = getLayerAtPosition(pos);
+            if (layer) {
+                state.activeLayer = layer;
+                state.activeObject = null;
+                showContextMenu(e.clientX, e.clientY, layer, 'layer');
+                return;
             }
         }
         
@@ -1160,13 +1172,20 @@
             }
         }
         
-        function showContextMenu(x, y, obj) {
+        function showContextMenu(x, y, item, type = 'object') {
             const menu = document.getElementById('context-menu');
+            const itemId = item.id;
+            
+            // Determine if it's a layer or object
+            const isLayer = type === 'layer';
+            
             menu.innerHTML = `
-                <div class="context-menu-item" onclick="bringToFront('${obj.id}')">Bring to Front</div>
-                <div class="context-menu-item" onclick="sendToBack('${obj.id}')">Send to Back</div>
-                <div class="context-menu-item" onclick="deleteObject('${obj.id}')">Delete</div>
-                <div class="context-menu-item" onclick="copyObject('${obj.id}')">Copy</div>
+                <div class="context-menu-item" onclick="bringToFront('${itemId}', '${type}')">Bring to Front</div>
+                <div class="context-menu-item" onclick="sendToBack('${itemId}', '${type}')">Send to Back</div>
+                <div class="context-menu-item" onclick="moveForward('${itemId}', '${type}')">Move Forward</div>
+                <div class="context-menu-item" onclick="moveBackward('${itemId}', '${type}')">Move Backward</div>
+                <div class="context-menu-item" onclick="deleteItem('${itemId}', '${type}')">Delete</div>
+                <div class="context-menu-item" onclick="copyItem('${itemId}', '${type}')">Copy</div>
             `;
             menu.style.left = `${x}px`;
             menu.style.top = `${y}px`;
@@ -1177,49 +1196,199 @@
             document.getElementById('context-menu').classList.remove('show');
         }
         
-        function bringToFront(objId) {
-            const obj = state.objects.find(o => o.id === objId);
-            if (obj) {
-                const maxZ = Math.max(...state.objects.map(o => o.z_index), 0);
-                obj.z_index = maxZ + 1;
-                state.objects.sort((a, b) => a.z_index - b.z_index);
-                render();
-                saveHistory();
+        function bringToFront(itemId, type) {
+            if (type === 'object') {
+                const obj = state.objects.find(o => o.id === itemId);
+                if (obj) {
+                    const allItems = [...state.layers, ...state.objects];
+                    const maxZ = Math.max(...allItems.map(i => i.z_index), 0);
+                    obj.z_index = maxZ + 1;
+                    sortAllItemsByZIndex();
+                    render();
+                    saveHistory();
+                }
+            } else if (type === 'layer') {
+                const layer = state.layers.find(l => l.id === itemId);
+                if (layer) {
+                    const allItems = [...state.layers, ...state.objects];
+                    const maxZ = Math.max(...allItems.map(i => i.z_index), 0);
+                    layer.z_index = maxZ + 1;
+                    sortAllItemsByZIndex();
+                    render();
+                    saveHistory();
+                }
             }
             hideContextMenu();
         }
         
-        function sendToBack(objId) {
-            const obj = state.objects.find(o => o.id === objId);
-            if (obj) {
-                const minZ = Math.min(...state.objects.map(o => o.z_index), 0);
-                obj.z_index = minZ - 1;
-                state.objects.sort((a, b) => a.z_index - b.z_index);
-                render();
-                saveHistory();
+        function sendToBack(itemId, type) {
+            if (type === 'object') {
+                const obj = state.objects.find(o => o.id === itemId);
+                if (obj) {
+                    const allItems = [...state.layers, ...state.objects];
+                    const minZ = Math.min(...allItems.map(i => i.z_index), 0);
+                    obj.z_index = minZ - 1;
+                    sortAllItemsByZIndex();
+                    render();
+                    saveHistory();
+                }
+            } else if (type === 'layer') {
+                const layer = state.layers.find(l => l.id === itemId);
+                if (layer) {
+                    const allItems = [...state.layers, ...state.objects];
+                    const minZ = Math.min(...allItems.map(i => i.z_index), 0);
+                    layer.z_index = minZ - 1;
+                    sortAllItemsByZIndex();
+                    render();
+                    saveHistory();
+                }
             }
             hideContextMenu();
         }
         
-        function deleteObject(objId) {
-            const obj = state.objects.find(o => o.id === objId);
-            if (obj) {
-                removeObject(obj);
+        function sortAllItemsByZIndex() {
+            // Sort both layers and objects together by z_index
+            const allItems = [...state.layers, ...state.objects];
+            allItems.sort((a, b) => a.z_index - b.z_index);
+            // Separate back into layers and objects
+            state.layers = allItems.filter(i => i.type === 'image' || !i.type);
+            state.objects = allItems.filter(i => i.type === 'object');
+        }
+        
+        function deleteItem(itemId, type) {
+            if (type === 'object') {
+                const obj = state.objects.find(o => o.id === itemId);
+                if (obj) {
+                    removeObject(obj);
+                }
+            } else if (type === 'layer') {
+                const layer = state.layers.find(l => l.id === itemId);
+                if (layer) {
+                    removeLayer(layer);
+                }
             }
             hideContextMenu();
         }
         
-        function copyObject(objId) {
-            const obj = state.objects.find(o => o.id === objId);
-            if (obj) {
-                const copy = JSON.parse(JSON.stringify(obj));
-                copy.id = `copy_${obj.id}_${Date.now()}`;
-                copy.position = [obj.position[0] + 20, obj.position[1] + 20];
-                copy.z_index = Math.max(...state.objects.map(o => o.z_index), 0) + 1;
-                state.objects.push(copy);
-                state.activeObject = copy;
+        function copyItem(itemId, type) {
+            if (type === 'object') {
+                const obj = state.objects.find(o => o.id === itemId);
+                if (obj) {
+                    const copy = JSON.parse(JSON.stringify(obj));
+                    copy.id = `copy_${obj.id}_${Date.now()}`;
+                    copy.position = [obj.position[0] + 20, obj.position[1] + 20];
+                    const allItems = [...state.layers, ...state.objects];
+                    copy.z_index = Math.max(...allItems.map(i => i.z_index), 0) + 1;
+                    state.objects.push(copy);
+                    state.activeObject = copy;
+                    sortAllItemsByZIndex();
+                    saveHistory();
+                    render();
+                }
+            } else if (type === 'layer') {
+                const layer = state.layers.find(l => l.id === itemId);
+                if (layer) {
+                    const copy = JSON.parse(JSON.stringify(layer));
+                    copy.id = `copy_${layer.id}_${Date.now()}`;
+                    copy.position = [layer.position[0] + 20, layer.position[1] + 20];
+                    const allItems = [...state.layers, ...state.objects];
+                    copy.z_index = Math.max(...allItems.map(i => i.z_index), 0) + 1;
+                    state.layers.push(copy);
+                    state.activeLayer = copy;
+                    sortAllItemsByZIndex();
+                    saveHistory();
+                    render();
+                }
+            }
+            hideContextMenu();
+        }
+        
+        function removeLayer(layer) {
+            const index = state.layers.indexOf(layer);
+            if (index > -1) {
+                state.layers.splice(index, 1);
+                if (state.activeLayer === layer) {
+                    state.activeLayer = null;
+                }
                 saveHistory();
                 render();
+                updateLayersList();
+            }
+        }
+        
+        function moveForward(itemId, type) {
+            if (type === 'object') {
+                const obj = state.objects.find(o => o.id === itemId);
+                if (obj) {
+                    const allItems = [...state.layers, ...state.objects];
+                    const currentZ = obj.z_index;
+                    const nextZ = currentZ + 1;
+                    // Find the next highest z-index
+                    const itemsAbove = allItems.filter(i => i.z_index > currentZ);
+                    if (itemsAbove.length > 0) {
+                        const minAboveZ = Math.min(...itemsAbove.map(i => i.z_index));
+                        obj.z_index = (currentZ + minAboveZ) / 2;
+                    } else {
+                        obj.z_index = currentZ + 1;
+                    }
+                    sortAllItemsByZIndex();
+                    render();
+                    saveHistory();
+                }
+            } else if (type === 'layer') {
+                const layer = state.layers.find(l => l.id === itemId);
+                if (layer) {
+                    const allItems = [...state.layers, ...state.objects];
+                    const currentZ = layer.z_index;
+                    const nextZ = currentZ + 1;
+                    const itemsAbove = allItems.filter(i => i.z_index > currentZ);
+                    if (itemsAbove.length > 0) {
+                        const minAboveZ = Math.min(...itemsAbove.map(i => i.z_index));
+                        layer.z_index = (currentZ + minAboveZ) / 2;
+                    } else {
+                        layer.z_index = currentZ + 1;
+                    }
+                    sortAllItemsByZIndex();
+                    render();
+                    saveHistory();
+                }
+            }
+            hideContextMenu();
+        }
+        
+        function moveBackward(itemId, type) {
+            if (type === 'object') {
+                const obj = state.objects.find(o => o.id === itemId);
+                if (obj) {
+                    const allItems = [...state.layers, ...state.objects];
+                    const currentZ = obj.z_index;
+                    const itemsBelow = allItems.filter(i => i.z_index < currentZ);
+                    if (itemsBelow.length > 0) {
+                        const maxBelowZ = Math.max(...itemsBelow.map(i => i.z_index));
+                        obj.z_index = (currentZ + maxBelowZ) / 2;
+                    } else {
+                        obj.z_index = currentZ - 1;
+                    }
+                    sortAllItemsByZIndex();
+                    render();
+                    saveHistory();
+                }
+            } else if (type === 'layer') {
+                const layer = state.layers.find(l => l.id === itemId);
+                if (layer) {
+                    const allItems = [...state.layers, ...state.objects];
+                    const currentZ = layer.z_index;
+                    const itemsBelow = allItems.filter(i => i.z_index < currentZ);
+                    if (itemsBelow.length > 0) {
+                        const maxBelowZ = Math.max(...itemsBelow.map(i => i.z_index));
+                        layer.z_index = (currentZ + maxBelowZ) / 2;
+                    } else {
+                        layer.z_index = currentZ - 1;
+                    }
+                    sortAllItemsByZIndex();
+                    render();
+                    saveHistory();
+                }
             }
             hideContextMenu();
         }
