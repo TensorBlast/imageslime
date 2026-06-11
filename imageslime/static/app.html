@@ -1901,17 +1901,55 @@
         function exportProject() {
             showStatus('Exporting...');
             
-            // Send request to export
-            fetch('/api/v1/project/export/default', {
-                method: 'GET'
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.blob();
+            // Create a temporary canvas for export
+            const exportCanvas = document.createElement('canvas');
+            const exportCtx = exportCanvas.getContext('2d');
+            
+            // Set canvas size to match visible area
+            exportCanvas.width = state.canvas.width;
+            exportCanvas.height = state.canvas.height;
+            
+            // Fill with background color
+            exportCtx.fillStyle = '#1a1a2e';
+            exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+            
+            // Draw all visible items
+            const allItems = [...state.layers, ...state.objects].sort((a, b) => a.z_index - b.z_index);
+            
+            for (const item of allItems) {
+                if (!item.visible) continue;
+                
+                exportCtx.save();
+                exportCtx.translate(item.position[0], item.position[1]);
+                exportCtx.rotate(item.rotation * Math.PI / 180);
+                exportCtx.scale(item.scale[0], item.scale[1]);
+                exportCtx.globalAlpha = item.opacity;
+                
+                if (item.type === 'object' || item.cropped_image_base64) {
+                    // Draw object
+                    if (item.cropped_image && item.cropped_image.complete && item.bounding_box) {
+                        const bbox = item.bounding_box;
+                        exportCtx.drawImage(
+                            item.cropped_image,
+                            bbox.x1, bbox.y1,
+                            bbox.x2 - bbox.x1,
+                            bbox.y2 - bbox.y1
+                        );
+                    }
+                } else if (item.image_obj && item.image_obj.complete) {
+                    // Draw layer
+                    exportCtx.drawImage(
+                        item.image_obj,
+                        0, 0, item.width, item.height
+                    );
                 }
-                throw new Error('Export failed');
-            })
-            .then(blob => {
+                
+                exportCtx.globalAlpha = 1.0;
+                exportCtx.restore();
+            }
+            
+            // Convert to blob and download
+            exportCanvas.toBlob(function(blob) {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -1921,10 +1959,7 @@
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
                 showStatus('Export complete!');
-            })
-            .catch(error => {
-                showStatus(`Export error: ${error.message}`, true);
-            });
+            }, 'image/png');
         }
         
         function checkSAM3Status() {

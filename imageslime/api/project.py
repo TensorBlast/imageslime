@@ -158,28 +158,18 @@ async def export_project(
     Export the current project as an image.
     
     Supported formats: png, jpeg
+    Note: Export is now handled client-side for better performance.
+    This endpoint is kept for backward compatibility.
     """
     try:
-        # In a real implementation, this would:
-        # 1. Get the project state
-        # 2. Composite all layers and objects
-        # 3. Return the final image
-        
-        # For now, return a placeholder
         temp_dir = os.path.join(settings.TEMP_DIR)
         os.makedirs(temp_dir, exist_ok=True)
         
-        # Create a blank image as placeholder
-        import cv2
-        import numpy as np
-        
+        # Create a placeholder - actual export is done in frontend
         canvas_width = 1920
         canvas_height = 1080
-        
-        # White background
         image = np.full((canvas_height, canvas_width, 3), 255, dtype=np.uint8)
         
-        # Add some text
         cv2.putText(
             image,
             f"Project: {project_id}",
@@ -190,7 +180,6 @@ async def export_project(
             3
         )
         
-        # Save to temp file
         temp_file = os.path.join(temp_dir, f"export_{project_id}.{format}")
         cv2.imwrite(temp_file, image)
         
