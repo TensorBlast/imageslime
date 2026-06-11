@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImageSlime - Editor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        #app-container {
+            display: flex;
+            height: calc(100vh - 80px);
+            width: 100vw;
+            margin-top: 50px;
+        }
+        
+        #sidebar {
+            width: 280px;
+            background: #16213e;
+            padding: 20px;
+            border-right: 1px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #2a2a3a;
+        }
+        
+        #main-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        
+        #toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: #0f3460;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #1a4a7a;
+            overflow-x: auto;
+            z-index: 100;
+        }
+        
+        #status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: #16213e;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: #888;
+            border-top: 1px solid #0f3460;
+            z-index: 100;
+        }
+        
+        .section-title {
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #0f3460;
+            margin: 15px 0 10px;
+            padding: 10px;
+            border-bottom: 1px solid #0f3460;
+        }
+        
+        #layers-list, #objects-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .layer-item, .object-item {
+            padding: 10px;
+            margin: 2px 0;
+            background: #0f3460;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+        
+        .layer-item:hover, .object-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .layer-item.active, .object-item.active {
+            background: rgba(102, 126, 234, 0.15);
+            border-color: #4a8ac2;
+        }
+        
+        .layer-thumbnail, .object-thumbnail {
+            width: 40px;
+            height: 40px;
+            background: #333;
+            border-radius: 4px;
+            margin-right: 10px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        
+        .layer-name, .object-name {
+            flex: 1;
+            font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .layer-controls, .object-controls {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .layer-controls button, .object-controls button {
+            background: transparent;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+        
+        .layer-controls button:hover, .object-controls button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        
+        .tool-btn {
+            background: transparent;
+            border: none;
+            color: #ccc;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s;
+            font-size: 0.9em;
+            white-space: nowrap;
+        }
+        
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+        
+        .tool-btn.active {
+            background: rgba(102, 126, 234, 0.2);
+            color: #4a8ac2;
+            border: 1px solid #4a8ac2;
+        }
+        
+        #upload-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #upload-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .coords {
+            color: #4a8ac2;
+        }
+        
+        .context-menu {
+            position: absolute;
+            background: #16213e;
+            border: 1px solid #0f3460;
+            border-radius: 6px;
+            padding: 5px 0;
+            z-index: 1000;
+            display: none;
+            min-width: 180px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        .context-menu.show {
+            display: block;
+        }
+        
+        .context-menu-item {
+            padding: 8px 15px;
+            color: #ccc;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .context-menu-item:hover {
+            background: #0f3460;
+            color: #fff;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        
+        .modal-content h3 {
+            margin-bottom: 20px;
+            color: #fff;
+            font-size: 1.3em;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: all 0.2s;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: #4a8ac2;
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background: #5a9bd2;
+        }
+        
+        .btn-secondary {
+            background: #0f3460;
+            color: #ccc;
+            border: 1px solid #1a4a7a;
+        }
+        
+        .btn-secondary:hover {
+            background: #1a4a7a;
+            color: #fff;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #4a8ac2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        #selection-rect {
+            position: absolute;
+            border: 2px dashed #4a8ac2;
+            background: rgba(74, 138, 194, 0.1);
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+        }
+        
+        #selection-rect.show {
+            display: block;
+        }
+        
+        .upload-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        
+        .upload-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #4a8ac2;
+            border-radius: 10px;
+            pointer-events: auto;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .upload-overlay.drag-over {
+            opacity: 1;
+        }
+        
+        .upload-overlay .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #4a8ac2;
+        }
+        
+        .upload-overlay .upload-text {
+            font-size: 1.2em;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+        
+        .upload-overlay .upload-hint {
+            font-size: 0.9em;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <div id="sidebar">
+            <div class="section-title">Layers</div>
+            <div id="layers-list"></div>
+            
+            <div class="section-title">Objects</div>
+            <div id="objects-list"></div>
+            
+            <div class="section-title">Tools</div>
+            <div id="tools-list">
+                <button class="tool-btn" onclick="setTool('select')" id="tool-select">
+                    🖱️ Select
+                </button>
+                <button class="tool-btn" onclick="setTool('segment')" id="tool-segment">
+                    ✂️ Segment
+                </button>
+                <button class="tool-btn" onclick="setTool('move')" id="tool-move">
+                    🪃 Move
+                </button>
+                <button class="tool-btn" onclick="setTool('rotate')" id="tool-rotate">
+                    🔄 Rotate
+                </button>
+                <button class="tool-btn" onclick="setTool('scale')" id="tool-scale">
+                    📐 Scale
+                </button>
+            </div>
+        </div>
+        
+        <div id="canvas-container">
+            <canvas id="main-canvas"></canvas>
+            <div id="selection-rect" class="selection-rect"></div>
+            <div id="upload-overlay" class="upload-overlay">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Drop images here</div>
+                <div class="upload-hint">or click to browse</div>
+            </div>
+            <div id="context-menu" class="context-menu"></div>
+        </div>
+    </div>
+    
+    <div id="toolbar" style="position: fixed; top: 0; left: 0; right: 0; z-index: 100;">
+        <label class="tool-btn" id="upload-btn" for="upload-input" style="margin-left: 20px;">
+            📁 Upload
+            <input type="file" id="upload-input" accept="image/*" multiple style="display: none;">
+        </label>
+        <button class="tool-btn" onclick="exportProject()">
+            💾 Export
+        </button>
+        <button class="tool-btn" onclick="clearCanvas()">
+            🗑️ Clear
+        </button>
+        <button class="tool-btn" onclick="undo()">
+            ⬅️ Undo
+        </button>
+        <button class="tool-btn" onclick="redo()">
+            ➡️ Redo
+        </button>
+    </div>
+    
+    <div id="status-bar">
+        <span class="coords" id="mouse-coords">X: 0, Y: 0</span>
+        <span id="status-message">Ready</span>
+    </div>
+    
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Title</h3>
+            <div id="modal-body"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmModal()" id="modal-confirm">OK</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Application state
+        const state = {
+            canvas: null,
+            ctx: null,
+            images: [],
+            layers: [],
+            objects: [],
+            activeTool: 'select',
+            activeLayer: null,
+            activeObject: null,
+            isDragging: false,
+            dragStart: { x: 0, y: 0 },
+            selectionRect: { start: null, end: null },
+            scale: 1,
+            offset: { x: 0, y: 0 },
+            mousePos: { x: 0, y: 0 },
+            history: [],
+            historyIndex: -1,
+            isDraggingFile: false
+        };
+        
+        // Initialize application
+        function init() {
+            state.canvas = document.getElementById('main-canvas');
+            state.ctx = state.canvas.getContext('2d');
+            
+            // Set canvas size
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Setup upload
+            setupUpload();
+            
+            // Load any existing project
+            loadProject();
+            
+            // Check SAM3 status
+            checkSAM3Status();
+            
+            // Start render loop
+            requestAnimationFrame(render);
+        }
+        
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            state.canvas.width = container.clientWidth;
+            state.canvas.height = container.clientHeight;
+            render();
+        }
+        
+        function setupUpload() {
+            // File input change handler
+            const uploadInput = document.getElementById('upload-input');
+            uploadInput.addEventListener('change', handleUpload);
+            
+            // Drag and drop setup
+            const canvasContainer = document.getElementById('canvas-container');
+            const uploadOverlay = document.getElementById('upload-overlay');
+            
+            // Drag enter
+            canvasContainer.addEventListener('dragenter', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                state.isDraggingFile = true;
+                uploadOverlay.classList.add('drag-over');
+            });
+            
+            // Drag leave
+            canvasContainer.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                state.isDraggingFile = false;
+                uploadOverlay.classList.remove('drag-over');
+            });
+            
+            // Drag over
+            canvasContainer.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+            
+            // Drop
+            canvasContainer.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                state.isDraggingFile = false;
+                uploadOverlay.classList.remove('drag-over');
+                
+                // Handle dropped files
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    handleDroppedFiles(e.dataTransfer.files);
+                }
+            });
+            
+            // Click on upload label - handled by HTML for attribute
+            
+            // Click on upload overlay
+            uploadOverlay.addEventListener('click', function(e) {
+                e.preventDefault();
+                uploadInput.click();
+            });
+        }
+        
+        function handleUpload(e) {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+            
+            showStatus(`Uploading ${files.length} file(s)...`);
+            
+            for (let i = 0; i < files.length; i++) {
+                uploadFile(files[i]);
+            }
+            
+            // Reset input so we can upload the same file again
+            e.target.value = '';
+        }
+        
+        function handleDroppedFiles(files) {
+            showStatus(`Uploading ${files.length} dropped file(s)...`);
+            
+            for (let i = 0; i < files.length; i++) {
+                uploadFile(files[i]);
+            }
+        }
+        
+        function uploadFile(file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            if (!validTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
+                showStatus(`Skipping ${file.name}: Invalid file type`, true);
+                return;
+            }
+            
+            // Validate file size (10MB max)
+            if (file.size > 10 * 1024 * 1024) {
+                showStatus(`Skipping ${file.name}: File too large (max 10MB)`, true);
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            fetch('/api/v1/images/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Create layer from uploaded image
+                    const layer = {
+                        id: data.image_id,
+                        name: file.name.replace(/\.[^\.]+$/, ''), // Remove extension
+                        image_path: data.image_path,
+                        image_base64: data.thumbnail_base64,
+                        width: data.width,
+                        height: data.height,
+                        original_width: data.width,
+                        original_height: data.height,
+                        position: [100 + state.layers.length * 50, 100 + state.layers.length * 50],
+                        rotation: 0,
+                        scale: [1, 1],
+                        opacity: 1,
+                        visible: true,
+                        z_index: state.layers.length
+                    };
+                    
+                    state.layers.push(layer);
+                    state.activeLayer = layer;
+                    updateLayersList();
+                    saveHistory();
+                    render();
+                    showStatus(`Image uploaded: ${file.name}`);
+                    
+                    // Pre-compute embeddings for faster segmentation
+                    computeEmbeddings(data.image_id);
+                } else {
+                    showStatus(`Upload failed: ${data.message || 'Unknown error'}`, true);
+                }
+            })
+            .catch(error => {
+                showStatus(`Upload error: ${error.message}`, true);
+                console.error('Upload error:', error);
+            });
+        }
+        
+        function computeEmbeddings(imageId) {
+            fetch(`/api/v1/images/${imageId}/compute-embeddings`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus(`Embeddings computed for image: ${imageId}`);
+                }
+            })
+            .catch(error => {
+                console.error('Failed to compute embeddings:', error);
+            });
+        }
+        
+        function setupEventListeners() {
+            // Mouse events
+            state.canvas.addEventListener('mousedown', onMouseDown);
+            state.canvas.addEventListener('mousemove', onMouseMove);
+            state.canvas.addEventListener('mouseup', onMouseUp);
+            state.canvas.addEventListener('mouseleave', onMouseLeave);
+            state.canvas.addEventListener('wheel', onWheel);
+            
+            // Keyboard events
+            document.addEventListener('keydown', onKeyDown);
+            
+            // Context menu
+            state.canvas.addEventListener('contextmenu', onContextMenu);
+        }
+        
+        function onMouseDown(e) {
+            // If we're dragging a file, don't process mouse events
+            if (state.isDraggingFile) return;
+            
+            const pos = getMousePos(e);
+            state.mousePos = pos;
+            updateMouseCoords(pos);
+            
+            switch (state.activeTool) {
+                case 'select':
+                    // Start selection rectangle
+                    state.selectionRect.start = pos;
+                    state.selectionRect.end = pos;
+                    updateSelectionRect();
+                    break;
+                    
+                case 'segment':
+                    // Check if we clicked on a layer
+                    const layer = getLayerAtPosition(pos);
+                    if (layer) {
+                        // Send segmentation request
+                        segmentAtPoint(pos, layer);
+                    } else {
+                        showStatus('No image at this position', true);
+                    }
+                    break;
+                    
+                case 'move':
+                    // Start dragging
+                    state.isDragging = true;
+                    state.dragStart = pos;
+                    break;
+                    
+                default:
+                    // Try to select object at this position
+                    const obj = getObjectAtPosition(pos);
+                    if (obj) {
+                        state.activeObject = obj;
+                        render();
+                    }
+            }
+        }
+        
+        function segmentAtPoint(pos, layer) {
+            showStatus('Segmenting...');
+            
+            // Calculate position relative to layer
+            const relX = pos.x - layer.position[0];
+            const relY = pos.y - layer.position[1];
+            
+            // Send request to backend
+            fetch('/api/v1/segmentation/points', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image_id: layer.id,
+                    points: [{ x: relX, y: relY }],
+                    labels: [1]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.mask_base64) {
+                    // Create new object from the mask
+                    const obj = {
+                        id: data.object_id || `obj_${Date.now()}`,
+                        name: `Object ${state.objects.length + 1}`,
+                        source_image_id: layer.id,
+                        source_image_path: layer.image_path,
+                        mask_base64: data.mask_base64,
+                        bounding_box: data.bounding_box,
+                        position: [pos.x, pos.y],
+                        rotation: 0,
+                        scale: [1, 1],
+                        opacity: 1,
+                        border_color: '#FF0000',
+                        border_width: 2,
+                        z_index: state.objects.length
+                    };
+                    
+                    state.objects.push(obj);
+                    state.activeObject = obj;
+                    saveHistory();
+                    render();
+                    showStatus('Segmentation complete!');
+                } else {
+                    showStatus('Segmentation failed: ' + (data.message || 'Unknown error'), true);
+                }
+            })
+            .catch(error => {
+                showStatus('Segmentation error: ' + error.message, true);
+                console.error('Segmentation error:', error);
+            });
+        }
+        
+        function onMouseMove(e) {
+            const pos = getMousePos(e);
+            state.mousePos = pos;
+            updateMouseCoords(pos);
+            
+            if (state.isDragging) {
+                // Handle dragging
+                const dx = pos.x - state.dragStart.x;
+                const dy = pos.y - state.dragStart.y;
+                
+                if (state.activeObject) {
+                    state.activeObject.position[0] += dx;
+                    state.activeObject.position[1] += dy;
+                    state.dragStart = pos;
+                    render();
+                }
+            } else if (state.selectionRect.start && state.activeTool === 'select') {
+                // Update selection rectangle
+                state.selectionRect.end = pos;
+                updateSelectionRect();
+            }
+        }
+        
+        function onMouseUp(e) {
+            const pos = getMousePos(e);
+            
+            if (state.isDragging) {
+                state.isDragging = false;
+                saveHistory();
+            }
+            
+            if (state.selectionRect.start && state.activeTool === 'select') {
+                // Complete selection
+                state.selectionRect.end = pos;
+                updateSelectionRect();
+                
+                // Check if we selected any objects
+                const selected = getObjectsInRect(state.selectionRect);
+                if (selected.length > 0) {
+                    // For now, just select the first one
+                    state.activeObject = selected[0];
+                }
+                
+                // Clear selection rectangle
+                state.selectionRect.start = null;
+                state.selectionRect.end = null;
+                updateSelectionRect();
+            }
+        }
+        
+        function onMouseLeave(e) {
+            // Clear selection rectangle if we leave the canvas
+            if (state.selectionRect.start) {
+                state.selectionRect.start = null;
+                state.selectionRect.end = null;
+                updateSelectionRect();
+            }
+        }
+        
+        function onWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            state.scale *= delta;
+            render();
+        }
+        
+        function onKeyDown(e) {
+            // Handle keyboard shortcuts
+            switch (e.key) {
+                case 'Escape':
+                    state.activeObject = null;
+                    state.activeTool = 'select';
+                    updateToolButtons();
+                    render();
+                    break;
+                    
+                case 'Delete':
+                case 'Backspace':
+                    if (state.activeObject) {
+                        removeObject(state.activeObject);
+                    }
+                    break;
+                    
+                case '1':
+                    setTool('select');
+                    break;
+                case '2':
+                    setTool('segment');
+                    break;
+                case '3':
+                    setTool('move');
+                    break;
+                case '4':
+                    setTool('rotate');
+                    break;
+                case '5':
+                    setTool('scale');
+                    break;
+            }
+        }
+        
+        function onContextMenu(e) {
+            e.preventDefault();
+            const pos = getMousePos(e);
+            
+            // Check if we clicked on an object
+            const obj = getObjectAtPosition(pos);
+            if (obj) {
+                state.activeObject = obj;
+                showContextMenu(e.clientX, e.clientY, obj);
+            }
+        }
+        
+        function getMousePos(e) {
+            const rect = state.canvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left - state.offset.x) / state.scale,
+                y: (e.clientY - rect.top - state.offset.y) / state.scale
+            };
+        }
+        
+        function updateMouseCoords(pos) {
+            document.getElementById('mouse-coords').textContent = 
+                `X: ${Math.round(pos.x)}, Y: ${Math.round(pos.y)}`;
+        }
+        
+        function updateSelectionRect() {
+            const rectEl = document.getElementById('selection-rect');
+            if (state.selectionRect.start && state.selectionRect.end) {
+                const start = state.selectionRect.start;
+                const end = state.selectionRect.end;
+                
+                rectEl.style.left = `${Math.min(start.x, end.x) * state.scale + state.offset.x}px`;
+                rectEl.style.top = `${Math.min(start.y, end.y) * state.scale + state.offset.y}px`;
+                rectEl.style.width = `${Math.abs(end.x - start.x) * state.scale}px`;
+                rectEl.style.height = `${Math.abs(end.y - start.y) * state.scale}px`;
+                rectEl.style.display = 'block';
+            } else {
+                rectEl.style.display = 'none';
+            }
+        }
+        
+        function setTool(tool) {
+            state.activeTool = tool;
+            updateToolButtons();
+            document.getElementById('status-message').textContent = 
+                `Tool: ${tool.charAt(0).toUpperCase() + tool.slice(1)}`;
+        }
+        
+        function updateToolButtons() {
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`tool-${state.activeTool}`).classList.add('active');
+        }
+        
+        function getLayerAtPosition(pos) {
+            // Check layers in reverse order (top to bottom)
+            for (let i = state.layers.length - 1; i >= 0; i--) {
+                const layer = state.layers[i];
+                if (layer.visible && isPointInLayer(pos, layer)) {
+                    return layer;
+                }
+            }
+            return null;
+        }
+        
+        function isPointInLayer(pos, layer) {
+            // Simple check - point is within layer bounds
+            return pos.x >= layer.position[0] && 
+                   pos.x <= layer.position[0] + layer.width &&
+                   pos.y >= layer.position[1] && 
+                   pos.y <= layer.position[1] + layer.height;
+        }
+        
+        function getObjectAtPosition(pos) {
+            // Check objects in reverse order (top to bottom)
+            for (let i = state.objects.length - 1; i >= 0; i--) {
+                const obj = state.objects[i];
+                if (obj.bounding_box && isPointInBox(pos, obj)) {
+                    return obj;
+                }
+            }
+            return null;
+        }
+        
+        function isPointInBox(pos, obj) {
+            const bbox = obj.bounding_box;
+            return pos.x >= bbox.x1 && pos.x <= bbox.x2 && 
+                   pos.y >= bbox.y1 && pos.y <= bbox.y2;
+        }
+        
+        function getObjectsInRect(rect) {
+            const minX = Math.min(rect.start.x, rect.end.x);
+            const maxX = Math.max(rect.start.x, rect.end.x);
+            const minY = Math.min(rect.start.y, rect.end.y);
+            const maxY = Math.max(rect.start.y, rect.end.y);
+            
+            return state.objects.filter(obj => {
+                if (!obj.bounding_box) return false;
+                const bbox = obj.bounding_box;
+                return !(bbox.x2 < minX || bbox.x1 > maxX || 
+                         bbox.y2 < minY || bbox.y1 > maxY);
+            });
+        }
+        
+        function removeObject(obj) {
+            const index = state.objects.indexOf(obj);
+            if (index > -1) {
+                state.objects.splice(index, 1);
+                if (state.activeObject === obj) {
+                    state.activeObject = null;
+                }
+                saveHistory();
+                render();
+            }
+        }
+        
+        function showContextMenu(x, y, obj) {
+            const menu = document.getElementById('context-menu');
+            menu.innerHTML = `
+                <div class="context-menu-item" onclick="bringToFront('${obj.id}')">Bring to Front</div>
+                <div class="context-menu-item" onclick="sendToBack('${obj.id}')">Send to Back</div>
+                <div class="context-menu-item" onclick="deleteObject('${obj.id}')">Delete</div>
+                <div class="context-menu-item" onclick="copyObject('${obj.id}')">Copy</div>
+            `;
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+            menu.classList.add('show');
+        }
+        
+        function hideContextMenu() {
+            document.getElementById('context-menu').classList.remove('show');
+        }
+        
+        function bringToFront(objId) {
+            const obj = state.objects.find(o => o.id === objId);
+            if (obj) {
+                const maxZ = Math.max(...state.objects.map(o => o.z_index), 0);
+                obj.z_index = maxZ + 1;
+                state.objects.sort((a, b) => a.z_index - b.z_index);
+                render();
+                saveHistory();
+            }
+            hideContextMenu();
+        }
+        
+        function sendToBack(objId) {
+            const obj = state.objects.find(o => o.id === objId);
+            if (obj) {
+                const minZ = Math.min(...state.objects.map(o => o.z_index), 0);
+                obj.z_index = minZ - 1;
+                state.objects.sort((a, b) => a.z_index - b.z_index);
+                render();
+                saveHistory();
+            }
+            hideContextMenu();
+        }
+        
+        function deleteObject(objId) {
+            const obj = state.objects.find(o => o.id === objId);
+            if (obj) {
+                removeObject(obj);
+            }
+            hideContextMenu();
+        }
+        
+        function copyObject(objId) {
+            const obj = state.objects.find(o => o.id === objId);
+            if (obj) {
+                const copy = JSON.parse(JSON.stringify(obj));
+                copy.id = `copy_${obj.id}_${Date.now()}`;
+                copy.position = [obj.position[0] + 20, obj.position[1] + 20];
+                copy.z_index = Math.max(...state.objects.map(o => o.z_index), 0) + 1;
+                state.objects.push(copy);
+                state.activeObject = copy;
+                saveHistory();
+                render();
+            }
+            hideContextMenu();
+        }
+        
+        function updateLayersList() {
+            const listEl = document.getElementById('layers-list');
+            listEl.innerHTML = state.layers.map(layer => `
+                <div class="layer-item ${state.activeLayer === layer ? 'active' : ''}" 
+                     onclick="selectLayer('${layer.id}')">
+                    <img src="${layer.image_base64 || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect width=%2240%22 height=%2240%22 fill=%22%23333%22/></svg>'}" 
+                         class="layer-thumbnail" alt="${layer.name}">
+                    <span class="layer-name">${layer.name}</span>
+                    <div class="layer-controls">
+                        <button onclick="event.stopPropagation(); toggleLayerVisibility('${layer.id}')">
+                            ${layer.visible ? '👁️' : '👁️‍🗨'}
+                        </button>
+                        <button onclick="event.stopPropagation(); deleteLayer('${layer.id}')">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function selectLayer(layerId) {
+            state.activeLayer = state.layers.find(l => l.id === layerId);
+            updateLayersList();
+            render();
+        }
+        
+        function toggleLayerVisibility(layerId) {
+            const layer = state.layers.find(l => l.id === layerId);
+            if (layer) {
+                layer.visible = !layer.visible;
+                updateLayersList();
+                render();
+            }
+        }
+        
+        function deleteLayer(layerId) {
+            const index = state.layers.findIndex(l => l.id === layerId);
+            if (index > -1) {
+                state.layers.splice(index, 1);
+                if (state.activeLayer && state.activeLayer.id === layerId) {
+                    state.activeLayer = null;
+                }
+                updateLayersList();
+                saveHistory();
+                render();
+            }
+        }
+        
+        function render() {
+            // Clear canvas
+            state.ctx.fillStyle = '#1a1a2e';
+            state.ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
+            
+            // Apply scale and offset
+            state.ctx.save();
+            state.ctx.scale(state.scale, state.scale);
+            state.ctx.translate(state.offset.x / state.scale, state.offset.y / state.scale);
+            
+            // Draw layers
+            for (const layer of state.layers) {
+                if (!layer.visible) continue;
+                drawLayer(layer);
+            }
+            
+            // Draw objects
+            for (const obj of state.objects) {
+                drawObject(obj);
+            }
+            
+            // Draw active object highlight
+            if (state.activeObject) {
+                drawObjectHighlight(state.activeObject);
+            }
+            
+            state.ctx.restore();
+        }
+        
+        function drawLayer(layer) {
+            // Draw placeholder for layer
+            state.ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            state.ctx.fillRect(
+                layer.position[0], 
+                layer.position[1], 
+                layer.width, 
+                layer.height
+            );
+            
+            // Draw border
+            state.ctx.strokeStyle = '#4a8ac2';
+            state.ctx.lineWidth = 2;
+            state.ctx.strokeRect(
+                layer.position[0], 
+                layer.position[1], 
+                layer.width, 
+                layer.height
+            );
+            
+            // Draw layer name
+            state.ctx.fillStyle = '#4a8ac2';
+            state.ctx.font = '12px Arial';
+            state.ctx.fillText(layer.name, layer.position[0] + 5, layer.position[1] + 15);
+            
+            // If layer has an image, try to draw it
+            if (layer.image_base64) {
+                drawLayerImage(layer);
+            }
+        }
+        
+        function drawLayerImage(layer) {
+            try {
+                const img = new Image();
+                img.onload = function() {
+                    state.ctx.save();
+                    state.ctx.translate(layer.position[0], layer.position[1]);
+                    state.ctx.scale(layer.scale[0], layer.scale[1]);
+                    state.ctx.rotate(layer.rotation * Math.PI / 180);
+                    
+                    state.ctx.globalAlpha = layer.opacity;
+                    state.ctx.drawImage(img, 0, 0, layer.width, layer.height);
+                    state.ctx.globalAlpha = 1.0;
+                    
+                    state.ctx.restore();
+                };
+                img.src = layer.image_base64;
+            } catch (e) {
+                console.error('Failed to draw layer image:', e);
+            }
+        }
+        
+        function drawObject(obj) {
+            if (!obj.mask_base64) return;
+            
+            // For now, draw the bounding box
+            if (obj.bounding_box) {
+                const bbox = obj.bounding_box;
+                
+                // Apply object transformations
+                state.ctx.save();
+                state.ctx.translate(obj.position[0], obj.position[1]);
+                state.ctx.rotate(obj.rotation * Math.PI / 180);
+                state.ctx.scale(obj.scale[0], obj.scale[1]);
+                
+                // Draw mask overlay
+                state.ctx.fillStyle = 'rgba(255, 107, 107, 0.3)';
+                state.ctx.fillRect(
+                    bbox.x1, bbox.y1, 
+                    bbox.x2 - bbox.x1, 
+                    bbox.y2 - bbox.y1
+                );
+                
+                // Draw border
+                state.ctx.strokeStyle = obj.border_color || '#FF0000';
+                state.ctx.lineWidth = obj.border_width || 2;
+                state.ctx.strokeRect(
+                    bbox.x1, bbox.y1, 
+                    bbox.x2 - bbox.x1, 
+                    bbox.y2 - bbox.y1
+                );
+                
+                state.ctx.restore();
+            }
+        }
+        
+        function drawObjectHighlight(obj) {
+            if (!obj.bounding_box) return;
+            
+            const bbox = obj.bounding_box;
+            
+            state.ctx.save();
+            state.ctx.translate(obj.position[0], obj.position[1]);
+            state.ctx.rotate(obj.rotation * Math.PI / 180);
+            state.ctx.scale(obj.scale[0], obj.scale[1]);
+            
+            // Draw highlight
+            state.ctx.strokeStyle = '#ffff00';
+            state.ctx.lineWidth = 3;
+            state.ctx.setLineDash([5, 5]);
+            state.ctx.strokeRect(
+                bbox.x1 - 5, bbox.y1 - 5, 
+                bbox.x2 - bbox.x1 + 10, 
+                bbox.y2 - bbox.y1 + 10
+            );
+            state.ctx.setLineDash([]);
+            
+            state.ctx.restore();
+        }
+        
+        function saveHistory() {
+            // Save current state to history
+            const currentState = {
+                layers: JSON.parse(JSON.stringify(state.layers)),
+                objects: JSON.parse(JSON.stringify(state.objects))
+            };
+            
+            // If we're not at the end of history, truncate
+            if (state.historyIndex < state.history.length - 1) {
+                state.history = state.history.slice(0, state.historyIndex + 1);
+            }
+            
+            state.history.push(currentState);
+            state.historyIndex = state.history.length - 1;
+            
+            // Limit history size
+            if (state.history.length > 50) {
+                state.history.shift();
+                state.historyIndex--;
+            }
+        }
+        
+        function undo() {
+            if (state.historyIndex > 0) {
+                state.historyIndex--;
+                const prevState = state.history[state.historyIndex];
+                state.layers = JSON.parse(JSON.stringify(prevState.layers));
+                state.objects = JSON.parse(JSON.stringify(prevState.objects));
+                state.activeObject = null;
+                updateLayersList();
+                render();
+            }
+        }
+        
+        function redo() {
+            if (state.historyIndex < state.history.length - 1) {
+                state.historyIndex++;
+                const nextState = state.history[state.historyIndex];
+                state.layers = JSON.parse(JSON.stringify(nextState.layers));
+                state.objects = JSON.parse(JSON.stringify(nextState.objects));
+                state.activeObject = null;
+                updateLayersList();
+                render();
+            }
+        }
+        
+        function clearCanvas() {
+            if (confirm('Are you sure you want to clear the canvas?')) {
+                state.layers = [];
+                state.objects = [];
+                state.activeLayer = null;
+                state.activeObject = null;
+                state.history = [];
+                state.historyIndex = -1;
+                updateLayersList();
+                render();
+                showStatus('Canvas cleared');
+            }
+        }
+        
+        function exportProject() {
+            showStatus('Exporting...');
+            
+            // Send request to export
+            fetch('/api/v1/project/export/default', {
+                method: 'GET'
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                }
+                throw new Error('Export failed');
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `imageslime_export_${Date.now()}.png`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                showStatus('Export complete!');
+            })
+            .catch(error => {
+                showStatus(`Export error: ${error.message}`, true);
+            });
+        }
+        
+        function checkSAM3Status() {
+            fetch('/api/v1/segmentation/model-info')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.model_info && data.model_info.available) {
+                        showStatus('SAM3 model ready!');
+                    } else {
+                        showStatus('SAM3 model not available', true);
+                    }
+                })
+                .catch(error => {
+                    showStatus('Failed to check SAM3 status', true);
+                });
+        }
+        
+        function showStatus(message, isError = false) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.style.color = isError ? '#ff6b6b' : '#4a8ac2';
+        }
+        
+        function loadProject() {
+            // Try to load the last saved project
+            fetch('/api/v1/project/list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.projects && data.projects.length > 0) {
+                        // Load the most recent project
+                        const latest = data.projects.reduce((a, b) => 
+                            new Date(a.updated_at) > new Date(b.updated_at) ? a : b);
+                        
+                        return fetch(`/api/v1/project/load?filepath=${encodeURIComponent(latest.filepath)}`);
+                    }
+                    return Promise.resolve({});
+                })
+                .then(response => {
+                    if (response && response.ok) {
+                        return response.json();
+                    }
+                    return {};
+                })
+                .then(data => {
+                    if (data.success && data.project) {
+                        // Load project data
+                        state.layers = data.project.image_layers || [];
+                        state.objects = data.project.segmented_objects || [];
+                        updateLayersList();
+                        render();
+                        showStatus(`Project loaded: ${data.project.name}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to load project:', error);
+                });
+        }
+        
+        // Modal functions
+        function showModal(title, content, confirmText = 'OK') {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').innerHTML = content;
+            document.getElementById('modal-confirm').textContent = confirmText;
+            document.getElementById('modal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
+        
+        function confirmModal() {
+            closeModal();
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
