@@ -494,8 +494,13 @@
             history: [],
             historyIndex: -1,
             isDraggingFile: false,
-            // Segmentation state (simplified for one-click)
+            // Segmentation state (multi-point with preview)
             isSegmenting: false,
+            segmentationLayer: null,
+            segmentationPoints: [],
+            segmentationPreviewMask: null,
+            segmentationPreviewBbox: null,
+            segmentationPreviewImage: null,
             // Direct manipulation state
             activeLayer: null,
             dragStartLayerPos: null,
@@ -767,8 +772,8 @@
                         const relX = pos.x - layer.position[0];
                         const relY = pos.y - layer.position[1];
                         
-                        // Create segmentation with single point
-                        createSegmentedObject(layer, relX, relY);
+                        // Start or add to multi-point segmentation
+                        addSegmentationPoint(layer, relX, relY);
                     } else {
                         showStatus('No image at this position', true);
                     }
@@ -824,7 +829,128 @@
             }
         }
         
-        // NEW: One-click segmentation (replaces multi-point system)
+        // Multi-point segmentation with preview and merge
+        function addSegmentationPoint(layer, relX, relY) {
+            // If clicking on a different layer, reset segmentation
+            if (state.segmentationLayer !== layer) {
+                state.segmentationLayer = layer;
+                state.segmentationPoints = [];
+                state.segmentationPreviewMask = null;
+                state.segmentationPreviewBbox = null;
+                state.segmentationPreviewImage = null;
+            }
+            
+            // Add new point
+            state.segmentationPoints.push({ x: relX, y: relY });
+            state.isSegmenting = true;
+            
+            // Request updated mask preview
+            updateSegmentationPreview(layer);
+        }
+        
+        function updateSegmentationPreview(layer) {
+            if (state.segmentationPoints.length === 0) return;
+            
+            showStatus(`Segmenting... (${state.segmentationPoints.length} points - click more, drag to finish, or press Enter)`);
+            
+            // Send all points to backend
+            fetch('/api/v1/segmentation/points', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image_id: layer.id,
+                    points: state.segmentationPoints,
+                    labels: state.segmentationPoints.map(() => 1)  // All foreground
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.cropped_image_base64) {
+                    // Store preview
+                    state.segmentationPreviewMask = data.mask_base64;
+                    state.segmentationPreviewBbox = data.bounding_box;
+                    state.segmentationPreviewImage = data.cropped_image_base64;
+                    
+                    // Pre-load preview image
+                    if (!state.segmentationPreviewImg) {
+                        const img = new Image();
+                        img.src = data.cropped_image_base64;
+                        img.onload = function() {
+                            state.segmentationPreviewImg = img;
+                            render();
+                        };
+                        state.segmentationPreviewImg = img;
+                    }
+                    
+                    render();
+                    showStatus(`Segmentation preview (${state.segmentationPoints.length} points - click more or drag to finish)`);
+                } else {
+                    showStatus('Preview failed: ' + (data.message || 'Unknown error'), true);
+                }
+            })
+            .catch(error => {
+                showStatus('Preview error: ' + error.message, true);
+                console.error('Preview error:', error);
+            });
+        }
+        
+        function finishSegmentation() {
+            if (!state.isSegmenting || !state.segmentationLayer) return;
+            
+            const layer = state.segmentationLayer;
+            const bbox = state.segmentationPreviewBbox;
+            
+            if (!bbox) {
+                showStatus('No segmentation to finalize', true);
+                return;
+            }
+            
+            // Calculate center position
+            const centerX = layer.position[0] + bbox.x1 + (bbox.x2 - bbox.x1) / 2;
+            const centerY = layer.position[1] + bbox.y1 + (bbox.y2 - bbox.y1) / 2;
+            
+            // Create object
+            const obj = {
+                id: `obj_${Date.now()}`,
+                name: `Object ${state.objects.length + 1}`,
+                type: 'object',
+                source_image_id: layer.id,
+                source_image_path: layer.image_path,
+                mask_base64: state.segmentationPreviewMask,
+                cropped_image_base64: state.segmentationPreviewImage,
+                bounding_box: bbox,
+                position: [centerX, centerY],
+                rotation: 0,
+                scale: [1, 1],
+                opacity: 1,
+                visible: true,
+                z_index: state.nextZIndex++,
+                cropped_image: state.segmentationPreviewImg
+            };
+            
+            state.objects.push(obj);
+            state.activeObject = obj;
+            saveHistory();
+            updateLayersList();
+            render();
+            showStatus('Object created!');
+            
+            // Reset segmentation state
+            resetSegmentation();
+        }
+        
+        function resetSegmentation() {
+            state.isSegmenting = false;
+            state.segmentationLayer = null;
+            state.segmentationPoints = [];
+            state.segmentationPreviewMask = null;
+            state.segmentationPreviewBbox = null;
+            state.segmentationPreviewImage = null;
+            state.segmentationPreviewImg = null;
+            render();
+        }
+        
+        // NEW: One-click segmentation (fallback)
         function createSegmentedObject(layer, relX, relY) {
             showStatus('Segmenting...');
             
@@ -945,7 +1071,13 @@
             
             if (state.isDragging) {
                 state.isDragging = false;
-                saveHistory();
+                
+                // If we were segmenting and dragged, finalize the segmentation
+                if (state.isSegmenting) {
+                    finishSegmentation();
+                } else {
+                    saveHistory();
+                }
             } else if (state.isRotating) {
                 state.isRotating = false;
                 saveHistory();
@@ -995,10 +1127,21 @@
             // Handle keyboard shortcuts
             switch (e.key) {
                 case 'Escape':
-                    state.activeObject = null;
-                    state.activeTool = 'select';
-                    updateToolButtons();
-                    render();
+                    if (state.isSegmenting) {
+                        resetSegmentation();
+                    } else {
+                        state.activeObject = null;
+                        state.activeLayer = null;
+                        state.activeTool = 'select';
+                        updateToolButtons();
+                        render();
+                    }
+                    break;
+                    
+                case 'Enter':
+                    if (state.isSegmenting) {
+                        finishSegmentation();
+                    }
                     break;
                     
                 case 'Delete':
@@ -1520,6 +1663,11 @@
                 }
             }
             
+            // Draw segmentation preview (if segmenting)
+            if (state.isSegmenting && state.segmentationPreviewImg && state.segmentationLayer) {
+                drawSegmentationPreview();
+            }
+            
             // Draw active item highlight
             if (state.activeObject) {
                 drawObjectHighlight(state.activeObject);
@@ -1543,6 +1691,41 @@
             state.ctx.lineWidth = 3;
             state.ctx.setLineDash([5, 5]);
             state.ctx.strokeRect(0, 0, layer.width, layer.height);
+            state.ctx.setLineDash([]);
+            
+            state.ctx.restore();
+        }
+        
+        function drawSegmentationPreview() {
+            if (!state.segmentationPreviewImg || !state.segmentationPreviewBbox || !state.segmentationLayer) return;
+            
+            const layer = state.segmentationLayer;
+            const bbox = state.segmentationPreviewBbox;
+            
+            state.ctx.save();
+            state.ctx.translate(layer.position[0], layer.position[1]);
+            state.ctx.rotate(layer.rotation * Math.PI / 180);
+            state.ctx.scale(layer.scale[0], layer.scale[1]);
+            
+            // Draw semi-transparent preview
+            state.ctx.globalAlpha = 0.6;
+            state.ctx.drawImage(
+                state.segmentationPreviewImg,
+                bbox.x1, bbox.y1,
+                bbox.x2 - bbox.x1,
+                bbox.y2 - bbox.y1
+            );
+            state.ctx.globalAlpha = 1.0;
+            
+            // Draw preview border
+            state.ctx.strokeStyle = '#ffff00';
+            state.ctx.lineWidth = 2;
+            state.ctx.setLineDash([5, 5]);
+            state.ctx.strokeRect(
+                bbox.x1, bbox.y1,
+                bbox.x2 - bbox.x1,
+                bbox.y2 - bbox.y1
+            );
             state.ctx.setLineDash([]);
             
             state.ctx.restore();
