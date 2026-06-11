@@ -869,6 +869,12 @@
             
             showStatus(`Segmenting... (${state.segmentationPoints.length} points - click more, drag to finish, or press Enter)`);
             
+            // Debug: log layer info
+            console.log('Segmentation: layer.id =', layer.id);
+            console.log('Segmentation: layer.image_path =', layer.image_path);
+            console.log('Segmentation: state.segmentationLayer =', state.segmentationLayer);
+            console.log('Segmentation: state.layers =', state.layers.map(l => l.id));
+            
             // Send all points to backend
             fetch('/api/v1/segmentation/points', {
                 method: 'POST',
@@ -879,7 +885,16 @@
                     labels: state.segmentationPoints.map(() => 1)  // All foreground
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    console.error('Segmentation error: HTTP', response.status, response.statusText);
+                    return response.json().then(err => {
+                        console.error('Segmentation error details:', err);
+                        throw new Error(err.detail || err.message || 'Segmentation failed');
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success && data.cropped_image_base64) {
                     // Store preview
