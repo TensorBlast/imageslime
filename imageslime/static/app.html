@@ -1209,9 +1209,17 @@
         }
         
         function isPointInBox(pos, obj) {
+            if (!obj.bounding_box) return false;
+            
             const bbox = obj.bounding_box;
-            return pos.x >= bbox.x1 && pos.x <= bbox.x2 && 
-                   pos.y >= bbox.y1 && pos.y <= bbox.y2;
+            // Account for object's position
+            const objX1 = obj.position[0] + bbox.x1;
+            const objY1 = obj.position[1] + bbox.y1;
+            const objX2 = obj.position[0] + bbox.x2;
+            const objY2 = obj.position[1] + bbox.y2;
+            
+            return pos.x >= objX1 && pos.x <= objX2 && 
+                   pos.y >= objY1 && pos.y <= objY2;
         }
         
         function getObjectsInRect(rect) {
@@ -1223,8 +1231,13 @@
             return state.objects.filter(obj => {
                 if (!obj.bounding_box) return false;
                 const bbox = obj.bounding_box;
-                return !(bbox.x2 < minX || bbox.x1 > maxX || 
-                         bbox.y2 < minY || bbox.y1 > maxY);
+                // Account for object's position
+                const objX1 = obj.position[0] + bbox.x1;
+                const objY1 = obj.position[1] + bbox.y1;
+                const objX2 = obj.position[0] + bbox.x2;
+                const objY2 = obj.position[1] + bbox.y2;
+                return !(objX2 < minX || objX1 > maxX || 
+                         objY2 < minY || objY1 > maxY);
             });
         }
         
