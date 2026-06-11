@@ -839,6 +839,13 @@
         
         // Multi-point segmentation with preview and merge
         function addSegmentationPoint(layer, relX, relY) {
+            // Debug: log what's being passed
+            console.log('addSegmentationPoint called with:', layer);
+            console.log('layer.id:', layer?.id);
+            console.log('layer.type:', layer?.type);
+            console.log('Is in state.layers?', state.layers.find(l => l.id === layer?.id) !== undefined);
+            console.log('Is in state.objects?', state.objects.find(o => o.id === layer?.id) !== undefined);
+            
             // If layer is null or not in layers, don't proceed
             if (!layer || !state.layers.find(l => l.id === layer.id)) {
                 showStatus('Cannot segment: layer not found', true);
@@ -1350,12 +1357,16 @@
         
         function getLayerAtPosition(pos) {
             // Check layers in reverse order (top to bottom)
+            console.log('getLayerAtPosition: checking', state.layers.length, 'layers');
             for (let i = state.layers.length - 1; i >= 0; i--) {
                 const layer = state.layers[i];
+                console.log('getLayerAtPosition: checking layer', layer.id, 'type:', layer.type);
                 if (layer.visible && isPointInLayer(pos, layer)) {
+                    console.log('getLayerAtPosition: FOUND layer', layer.id);
                     return layer;
                 }
             }
+            console.log('getLayerAtPosition: NO layer found at position', pos);
             return null;
         }
         
