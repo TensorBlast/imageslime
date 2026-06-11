@@ -118,6 +118,7 @@ async def segment_with_points(
             success=True,
             object_id=segmented_obj.id,
             mask_base64=segmented_obj.mask_base64,
+            preview_mask_base64=segmented_obj.preview_mask_base64,
             cropped_image_base64=segmented_obj.cropped_image_base64,
             bounding_box=bbox_model,
             message="Segmentation successful"

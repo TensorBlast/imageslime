@@ -235,6 +235,9 @@ class SAM3SegmentationService:
                     # Convert mask to base64 for frontend
                     obj.mask_base64 = self._mask_to_base64(mask)
                     
+                    # Create a red RGBA preview mask for frontend
+                    obj.preview_mask_base64 = self._create_red_mask_preview(mask)
+                    
                     logger.info(f"Segmentation successful with {len(points)} points")
                     return obj
             
@@ -403,6 +406,32 @@ class SAM3SegmentationService:
         
         # Encode as PNG
         _, buffer = cv2.imencode('.png', mask)
+        mask_bytes = buffer.tobytes()
+        
+        # Convert to base64
+        mask_base64 = base64.b64encode(mask_bytes).decode('utf-8')
+        return f"data:image/png;base64,{mask_base64}"
+    
+    def _create_red_mask_preview(self, mask: np.ndarray) -> str:
+        """Create a red RGBA mask preview with transparency.
+        
+        Returns a base64 PNG where mask regions are red with 50% opacity.
+        """
+        # Ensure mask is binary (0 or 255)
+        mask = (mask > 0).astype(np.uint8) * 255
+        
+        # Create RGBA image: red with alpha from mask
+        height, width = mask.shape
+        rgba_mask = np.zeros((height, width, 4), dtype=np.uint8)
+        
+        # Set red channel to 255 where mask is white
+        rgba_mask[..., 0] = mask  # Red channel
+        rgba_mask[..., 1] = 0     # Green channel
+        rgba_mask[..., 2] = 0     # Blue channel
+        rgba_mask[..., 3] = (mask > 0).astype(np.uint8) * 128  # Alpha channel (50% opacity)
+        
+        # Encode as PNG
+        _, buffer = cv2.imencode('.png', rgba_mask)
         mask_bytes = buffer.tobytes()
         
         # Convert to base64

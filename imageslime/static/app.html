@@ -871,10 +871,10 @@
                     state.segmentationPreviewBbox = data.bounding_box;
                     state.segmentationPreviewImage = data.cropped_image_base64;
                     
-                    // Pre-load mask image for red overlay
-                    if (data.mask_base64 && !state.segmentationPreviewMaskImg) {
+                    // Use the red preview mask from backend
+                    if (data.preview_mask_base64 && !state.segmentationPreviewMaskImg) {
                         const maskImg = new Image();
-                        maskImg.src = data.mask_base64;
+                        maskImg.src = data.preview_mask_base64;
                         maskImg.onload = function() {
                             state.segmentationPreviewMaskImg = maskImg;
                             render();
@@ -1709,35 +1709,17 @@
         }
         
         function drawSegmentationPreview() {
-            if (!state.segmentationPreviewMaskImg || !state.segmentationPreviewBbox || !state.segmentationLayer) return;
+            if (!state.segmentationPreviewMaskImg || !state.segmentationLayer) return;
             
             const layer = state.segmentationLayer;
-            const bbox = state.segmentationPreviewBbox;
             
             state.ctx.save();
             state.ctx.translate(layer.position[0], layer.position[1]);
             state.ctx.rotate(layer.rotation * Math.PI / 180);
             state.ctx.scale(layer.scale[0], layer.scale[1]);
             
-            // Draw the mask with red overlay (only on mask regions)
-            // The mask is a binary image: white=object, black=background, same size as layer image
-            // We want to tint just the white pixels red
-            
-            state.ctx.save();
-            state.ctx.globalAlpha = 0.5;
-            
-            // Method: Fill with red, then use mask to keep only mask areas
-            // The mask is full image size, so draw it at (0,0) relative to the layer
-            // First fill entire layer area with red
-            state.ctx.fillStyle = '#ff0000';
-            state.ctx.fillRect(0, 0, layer.width || state.canvas.width, layer.height || state.canvas.height);
-            
-            // Use mask to clip - only keep red where mask is white
-            state.ctx.globalCompositeOperation = 'destination-in';
+            // Draw the red preview mask from backend (already has RGBA with transparency)
             state.ctx.drawImage(state.segmentationPreviewMaskImg, 0, 0);
-            
-            state.ctx.globalCompositeOperation = 'source-over';
-            state.ctx.restore();
             
             state.ctx.restore();
         }
