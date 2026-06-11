@@ -487,6 +487,9 @@
             isDraggingFile: false,
             // Segmentation state (simplified for one-click)
             isSegmenting: false,
+            // Direct manipulation state
+            activeLayer: null,
+            dragStartLayerPos: null,
             // Object manipulation state
             isRotating: false,
             rotationStart: 0,
@@ -706,6 +709,26 @@
             state.mousePos = pos;
             updateMouseCoords(pos);
             
+            // Check if we clicked on any layer (image or object) for direct dragging
+            const layer = getLayerAtPosition(pos);
+            const obj = getObjectAtPosition(pos);
+            const clickedItem = layer || obj;
+            
+            // If we clicked on something and not using a specific tool, start dragging
+            if (clickedItem && state.activeTool === 'select') {
+                state.activeObject = obj || null;
+                state.activeLayer = layer || null;
+                state.isDragging = true;
+                state.dragStart = pos;
+                if (obj) {
+                    state.dragStartObjPos = [obj.position[0], obj.position[1]];
+                } else if (layer) {
+                    state.dragStartLayerPos = [layer.position[0], layer.position[1]];
+                }
+                e.preventDefault();
+                return;
+            }
+            
             switch (state.activeTool) {
                 case 'select':
                     // Start selection rectangle
@@ -877,13 +900,18 @@
             state.mousePos = pos;
             updateMouseCoords(pos);
             
-            if (state.isDragging && state.activeObject) {
-                // Handle dragging
+            if (state.isDragging) {
+                // Handle dragging for both objects and layers
                 const dx = pos.x - state.dragStart.x;
                 const dy = pos.y - state.dragStart.y;
                 
-                state.activeObject.position[0] += dx;
-                state.activeObject.position[1] += dy;
+                if (state.activeObject) {
+                    state.activeObject.position[0] += dx;
+                    state.activeObject.position[1] += dy;
+                } else if (state.activeLayer) {
+                    state.activeLayer.position[0] += dx;
+                    state.activeLayer.position[1] += dy;
+                }
                 state.dragStart = pos;
                 render();
                 
