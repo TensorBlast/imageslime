@@ -33,6 +33,7 @@ class ImageResponse(BaseModel):
     width: Optional[int] = None
     height: Optional[int] = None
     thumbnail_base64: Optional[str] = None
+    image_base64: Optional[str] = None
 
 
 @router.post("/upload", response_model=ImageResponse)
@@ -104,8 +105,11 @@ async def upload_image(
                 )
             height, width = img.shape[:2]
         
-        # Create thumbnail
-        thumbnail_base64 = _create_thumbnail(image_path, max_size=200)
+        # Create thumbnail (larger size for display)
+        thumbnail_base64 = _create_thumbnail(image_path, max_size=1024)
+        
+        # Also create full image base64 for frontend display
+        full_image_base64 = _create_thumbnail(image_path, max_size=2048)  # Use larger size
         
         logger.info(f"Image uploaded: {image_id} ({width}x{height})")
         
@@ -116,7 +120,8 @@ async def upload_image(
             image_path=str(image_path),
             width=width,
             height=height,
-            thumbnail_base64=thumbnail_base64
+            thumbnail_base64=thumbnail_base64,
+            image_base64=full_image_base64
         )
         
     except HTTPException:
