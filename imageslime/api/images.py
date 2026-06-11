@@ -105,11 +105,8 @@ async def upload_image(
                 )
             height, width = img.shape[:2]
         
-        # Create thumbnail (larger size for display)
-        thumbnail_base64 = _create_thumbnail(image_path, max_size=1024)
-        
-        # Also create full image base64 for frontend display
-        full_image_base64 = _create_thumbnail(image_path, max_size=2048)  # Use larger size
+        # Create base64 image for frontend display (1024px max for good quality)
+        image_base64 = _create_thumbnail(image_path, max_size=1024)
         
         logger.info(f"Image uploaded: {image_id} ({width}x{height})")
         
@@ -120,8 +117,8 @@ async def upload_image(
             image_path=str(image_path),
             width=width,
             height=height,
-            thumbnail_base64=thumbnail_base64,
-            image_base64=full_image_base64
+            thumbnail_base64=image_base64,  # Keep for backward compatibility
+            image_base64=image_base64      # Use for display
         )
         
     except HTTPException:
