@@ -492,7 +492,13 @@
             segmentationPreviewMask: null,
             segmentationPreviewMaskImage: null,
             segmentationPreviewBbox: null,
-            isSegmenting: false
+            isSegmenting: false,
+            // Object manipulation state
+            isRotating: false,
+            rotationStart: 0,
+            isScaling: false,
+            scaleStart: { x: 0, y: 0 },
+            originalScale: [1, 1]
         };
         
         // Initialize application
@@ -726,16 +732,50 @@
                     break;
                     
                 case 'move':
-                    // Start dragging
-                    state.isDragging = true;
-                    state.dragStart = pos;
+                    // Check if we clicked on an object to move
+                    const objToMove = getObjectAtPosition(pos);
+                    if (objToMove) {
+                        state.activeObject = objToMove;
+                        state.isDragging = true;
+                        state.dragStart = pos;
+                        // Store original position for dragging
+                        state.dragStartObjPos = [objToMove.position[0], objToMove.position[1]];
+                    } else {
+                        showStatus('No object at this position to move', true);
+                    }
+                    break;
+                    
+                case 'rotate':
+                    // Check if we clicked on an object to rotate
+                    const objToRotate = getObjectAtPosition(pos);
+                    if (objToRotate) {
+                        state.activeObject = objToRotate;
+                        state.isRotating = true;
+                        state.rotationStart = objToRotate.rotation;
+                        state.dragStart = pos;
+                    } else {
+                        showStatus('No object at this position to rotate', true);
+                    }
+                    break;
+                    
+                case 'scale':
+                    // Check if we clicked on an object to scale
+                    const objToScale = getObjectAtPosition(pos);
+                    if (objToScale) {
+                        state.activeObject = objToScale;
+                        state.isScaling = true;
+                        state.scaleStart = pos;
+                        state.originalScale = [objToScale.scale[0], objToScale.scale[1]];
+                    } else {
+                        showStatus('No object at this position to scale', true);
+                    }
                     break;
                     
                 default:
                     // Try to select object at this position
-                    const obj = getObjectAtPosition(pos);
-                    if (obj) {
-                        state.activeObject = obj;
+                    const objToSelect = getObjectAtPosition(pos);
+                    if (objToSelect) {
+                        state.activeObject = objToSelect;
                         render();
                     }
             }
@@ -937,17 +977,33 @@
             state.mousePos = pos;
             updateMouseCoords(pos);
             
-            if (state.isDragging) {
+            if (state.isDragging && state.activeObject) {
                 // Handle dragging
                 const dx = pos.x - state.dragStart.x;
                 const dy = pos.y - state.dragStart.y;
                 
-                if (state.activeObject) {
-                    state.activeObject.position[0] += dx;
-                    state.activeObject.position[1] += dy;
-                    state.dragStart = pos;
-                    render();
-                }
+                state.activeObject.position[0] += dx;
+                state.activeObject.position[1] += dy;
+                state.dragStart = pos;
+                render();
+                
+            } else if (state.isRotating && state.activeObject) {
+                // Handle rotation
+                const centerX = state.activeObject.position[0];
+                const centerY = state.activeObject.position[1];
+                const angle = calculateAngle(centerX, centerY, pos.x, pos.y);
+                state.activeObject.rotation = state.rotationStart + angle;
+                render();
+                
+            } else if (state.isScaling && state.activeObject) {
+                // Handle scaling
+                const dx = pos.x - state.scaleStart.x;
+                const dy = pos.y - state.scaleStart.y;
+                const scaleFactor = 1 + (dx + dy) / 200; // Adjust sensitivity
+                state.activeObject.scale[0] = state.originalScale[0] * scaleFactor;
+                state.activeObject.scale[1] = state.originalScale[1] * scaleFactor;
+                render();
+                
             } else if (state.selectionRect.start && state.activeTool === 'select') {
                 // Update selection rectangle
                 state.selectionRect.end = pos;
@@ -960,6 +1016,12 @@
             
             if (state.isDragging) {
                 state.isDragging = false;
+                saveHistory();
+            } else if (state.isRotating) {
+                state.isRotating = false;
+                saveHistory();
+            } else if (state.isScaling) {
+                state.isScaling = false;
                 saveHistory();
             }
             
@@ -1063,6 +1125,13 @@
                 x: (e.clientX - rect.left - state.offset.x) / state.scale,
                 y: (e.clientY - rect.top - state.offset.y) / state.scale
             };
+        }
+        
+        function calculateAngle(centerX, centerY, mouseX, mouseY) {
+            // Calculate angle in degrees between center and mouse position
+            const dx = mouseX - centerX;
+            const dy = mouseY - centerY;
+            return Math.atan2(dy, dx) * (180 / Math.PI);
         }
         
         function updateMouseCoords(pos) {
@@ -1375,7 +1444,7 @@
             // Draw the actual mask
             if (obj.mask_image && obj.mask_image.complete && obj.bounding_box) {
                 const bbox = obj.bounding_box;
-                state.ctx.globalAlpha = 0.5;
+                state.ctx.globalAlpha = 0.7;
                 state.ctx.drawImage(
                     obj.mask_image,
                     bbox.x1, bbox.y1,
@@ -1388,18 +1457,6 @@
                 const bbox = obj.bounding_box;
                 state.ctx.fillStyle = 'rgba(255, 107, 107, 0.3)';
                 state.ctx.fillRect(
-                    bbox.x1, bbox.y1, 
-                    bbox.x2 - bbox.x1, 
-                    bbox.y2 - bbox.y1
-                );
-            }
-            
-            // Draw border around the mask using bounding box
-            if (obj.bounding_box) {
-                const bbox = obj.bounding_box;
-                state.ctx.strokeStyle = obj.border_color || '#FF0000';
-                state.ctx.lineWidth = obj.border_width || 2;
-                state.ctx.strokeRect(
                     bbox.x1, bbox.y1, 
                     bbox.x2 - bbox.x1, 
                     bbox.y2 - bbox.y1
