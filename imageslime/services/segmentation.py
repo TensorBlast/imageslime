@@ -178,17 +178,16 @@ class SAM3SegmentationService:
             return None
         
         try:
-            # Convert points to format expected by Ultralytics SAM
-            # For multiple points on the same object, use list of points with corresponding labels
-            # Format: points=[[x1, y1], [x2, y2], ...], labels=[1, 1, ...]
+            # Convert points to format expected by SAM
+            # For one object with multiple points: points=[[[x1, y1], [x2, y2], ...]], labels=[[1, 1, ...]]
             # This tells SAM all points belong to the same object
-            sam_points = [[p.x, p.y] for p in points]
+            sam_points = [[[p.x, p.y] for p in points]]
             
             # If no labels provided, assume all points are foreground
             if labels is None:
-                sam_labels = [1] * len(points)
+                sam_labels = [[1] * len(points)]
             else:
-                sam_labels = labels
+                sam_labels = [labels]
             
             # Use the main model for prediction
             # Ultralytics SAM3 handles everything internally
