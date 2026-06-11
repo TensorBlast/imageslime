@@ -484,7 +484,13 @@
             mousePos: { x: 0, y: 0 },
             history: [],
             historyIndex: -1,
-            isDraggingFile: false
+            isDraggingFile: false,
+            // Multi-point segmentation state
+            segmentationPoints: [],
+            segmentationLabels: [],
+            segmentationLayer: null,
+            segmentationPreviewMask: null,
+            isSegmenting: false
         };
         
         // Initialize application
@@ -710,8 +716,8 @@
                     // Check if we clicked on a layer
                     const layer = getLayerAtPosition(pos);
                     if (layer) {
-                        // Send segmentation request
-                        segmentAtPoint(pos, layer);
+                        // Add point to segmentation
+                        addSegmentationPoint(pos, layer);
                     } else {
                         showStatus('No image at this position', true);
                     }
@@ -731,6 +737,126 @@
                         render();
                     }
             }
+        }
+        
+        function addSegmentationPoint(pos, layer) {
+            // Calculate position relative to layer
+            const relX = pos.x - layer.position[0];
+            const relY = pos.y - layer.position[1];
+            
+            // Start new segmentation if not already segmenting or if layer changed
+            if (!state.isSegmenting || state.segmentationLayer !== layer) {
+                // Start new segmentation session
+                state.segmentationPoints = [{ x: relX, y: relY }];
+                state.segmentationLabels = [1];
+                state.segmentationLayer = layer;
+                state.isSegmenting = true;
+                state.segmentationPreviewMask = null;
+                showStatus('Adding segmentation points... (click more or press Enter to finish)');
+            } else {
+                // Add to existing segmentation
+                state.segmentationPoints.push({ x: relX, y: relY });
+                state.segmentationLabels.push(1);
+                showStatus(`Segmentation points: ${state.segmentationPoints.length} (press Enter to finish)`);
+            }
+            
+            // Request updated mask preview
+            updateSegmentationPreview(layer);
+        }
+        
+        function updateSegmentationPreview(layer) {
+            if (state.segmentationPoints.length === 0) return;
+            
+            showStatus('Updating segmentation preview...');
+            
+            // Send request to backend with all current points
+            fetch('/api/v1/segmentation/points', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image_id: layer.id,
+                    points: state.segmentationPoints,
+                    labels: state.segmentationLabels
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.mask_base64) {
+                    // Store preview mask
+                    state.segmentationPreviewMask = data.mask_base64;
+                    state.segmentationPreviewBbox = data.bounding_box;
+                    render();
+                    showStatus(`Segmentation preview updated (${state.segmentationPoints.length} points)`);
+                } else {
+                    showStatus('Preview update failed: ' + (data.message || 'Unknown error'), true);
+                }
+            })
+            .catch(error => {
+                showStatus('Preview error: ' + error.message, true);
+                console.error('Preview error:', error);
+            });
+        }
+        
+        function finishSegmentation() {
+            if (!state.isSegmenting || state.segmentationPoints.length === 0) return;
+            
+            const layer = state.segmentationLayer;
+            if (!layer) return;
+            
+            showStatus('Finalizing segmentation...');
+            
+            // Calculate center position for the new object
+            const avgX = state.segmentationPoints.reduce((sum, p) => sum + p.x, 0) / state.segmentationPoints.length;
+            const avgY = state.segmentationPoints.reduce((sum, p) => sum + p.y, 0) / state.segmentationPoints.length;
+            const pos = {
+                x: avgX + layer.position[0],
+                y: avgY + layer.position[1]
+            };
+            
+            // Create new object from the final mask
+            if (state.segmentationPreviewMask && state.segmentationPreviewBbox) {
+                const obj = {
+                    id: `obj_${Date.now()}`,
+                    name: `Object ${state.objects.length + 1}`,
+                    source_image_id: layer.id,
+                    source_image_path: layer.image_path,
+                    mask_base64: state.segmentationPreviewMask,
+                    bounding_box: state.segmentationPreviewBbox,
+                    position: [pos.x, pos.y],
+                    rotation: 0,
+                    scale: [1, 1],
+                    opacity: 1,
+                    border_color: '#FF0000',
+                    border_width: 2,
+                    z_index: state.objects.length
+                };
+                
+                state.objects.push(obj);
+                state.activeObject = obj;
+                saveHistory();
+                render();
+                showStatus('Segmentation complete!');
+            }
+            
+            // Reset segmentation state
+            state.segmentationPoints = [];
+            state.segmentationLabels = [];
+            state.segmentationLayer = null;
+            state.isSegmenting = false;
+            state.segmentationPreviewMask = null;
+            state.segmentationPreviewBbox = null;
+        }
+        
+        function cancelSegmentation() {
+            // Reset segmentation state without creating an object
+            state.segmentationPoints = [];
+            state.segmentationLabels = [];
+            state.segmentationLayer = null;
+            state.isSegmenting = false;
+            state.segmentationPreviewMask = null;
+            state.segmentationPreviewBbox = null;
+            render();
+            showStatus('Segmentation cancelled');
         }
         
         function segmentAtPoint(pos, layer) {
@@ -855,15 +981,27 @@
             // Handle keyboard shortcuts
             switch (e.key) {
                 case 'Escape':
-                    state.activeObject = null;
-                    state.activeTool = 'select';
-                    updateToolButtons();
-                    render();
+                    if (state.isSegmenting) {
+                        cancelSegmentation();
+                    } else {
+                        state.activeObject = null;
+                        state.activeTool = 'select';
+                        updateToolButtons();
+                        render();
+                    }
+                    break;
+                    
+                case 'Enter':
+                    if (state.isSegmenting) {
+                        finishSegmentation();
+                    }
                     break;
                     
                 case 'Delete':
                 case 'Backspace':
-                    if (state.activeObject) {
+                    if (state.isSegmenting) {
+                        cancelSegmentation();
+                    } else if (state.activeObject) {
                         removeObject(state.activeObject);
                     }
                     break;
@@ -1134,9 +1272,19 @@
                 drawObject(obj);
             }
             
+            // Draw segmentation preview mask (if segmenting)
+            if (state.isSegmenting && state.segmentationPreviewMask && state.segmentationLayer) {
+                drawSegmentationPreview();
+            }
+            
             // Draw active object highlight
             if (state.activeObject) {
                 drawObjectHighlight(state.activeObject);
+            }
+            
+            // Draw segmentation points (if segmenting)
+            if (state.isSegmenting && state.segmentationLayer) {
+                drawSegmentationPoints();
             }
             
             state.ctx.restore();
@@ -1248,6 +1396,65 @@
                 bbox.y2 - bbox.y1 + 10
             );
             state.ctx.setLineDash([]);
+            
+            state.ctx.restore();
+        }
+        
+        function drawSegmentationPreview() {
+            // Draw the preview mask for multi-point segmentation
+            const layer = state.segmentationLayer;
+            if (!layer || !state.segmentationPreviewMask || !state.segmentationPreviewBbox) return;
+            
+            state.ctx.save();
+            state.ctx.translate(layer.position[0], layer.position[1]);
+            state.ctx.rotate(layer.rotation * Math.PI / 180);
+            state.ctx.scale(layer.scale[0], layer.scale[1]);
+            
+            const bbox = state.segmentationPreviewBbox;
+            
+            // Draw semi-transparent mask overlay
+            state.ctx.fillStyle = 'rgba(255, 107, 107, 0.3)';
+            state.ctx.fillRect(
+                bbox.x1, bbox.y1, 
+                bbox.x2 - bbox.x1, 
+                bbox.y2 - bbox.y1
+            );
+            
+            // Draw border
+            state.ctx.strokeStyle = '#FF6B6B';
+            state.ctx.lineWidth = 2;
+            state.ctx.strokeRect(
+                bbox.x1, bbox.y1, 
+                bbox.x2 - bbox.x1, 
+                bbox.y2 - bbox.y1
+            );
+            
+            state.ctx.restore();
+        }
+        
+        function drawSegmentationPoints() {
+            // Draw the points being used for segmentation
+            const layer = state.segmentationLayer;
+            if (!layer) return;
+            
+            state.ctx.save();
+            state.ctx.translate(layer.position[0], layer.position[1]);
+            state.ctx.rotate(layer.rotation * Math.PI / 180);
+            state.ctx.scale(layer.scale[0], layer.scale[1]);
+            
+            // Draw each point
+            for (const point of state.segmentationPoints) {
+                state.ctx.fillStyle = '#FFFF00';
+                state.ctx.beginPath();
+                state.ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+                state.ctx.fill();
+                
+                // Draw number
+                state.ctx.fillStyle = '#000000';
+                state.ctx.font = '12px Arial';
+                const index = state.segmentationPoints.indexOf(point) + 1;
+                state.ctx.fillText(index.toString(), point.x + 8, point.y + 4);
+            }
             
             state.ctx.restore();
         }
