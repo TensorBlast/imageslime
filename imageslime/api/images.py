@@ -139,7 +139,7 @@ async def get_image(
     """
     Get the original image file.
     """
-    upload_dir = Path(settings.UPLOAD_DIR)
+    upload_dir = Path(settings.UPLOAD_DIR).absolute()
     
     # Find the image file
     for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
@@ -166,7 +166,7 @@ async def get_thumbnail(
     """
     Get a thumbnail of the image.
     """
-    upload_dir = Path(settings.UPLOAD_DIR)
+    upload_dir = Path(settings.UPLOAD_DIR).absolute()
     
     # Find the image file
     image_path = None
@@ -198,7 +198,7 @@ async def delete_image(
     """
     Delete an uploaded image.
     """
-    upload_dir = Path(settings.UPLOAD_DIR)
+    upload_dir = Path(settings.UPLOAD_DIR).absolute()
     
     # Find and delete the image file
     deleted = False
@@ -233,7 +233,7 @@ async def compute_embeddings(
     This pre-computes the image embeddings for faster segmentation.
     """
     try:
-        upload_dir = Path(settings.UPLOAD_DIR)
+        upload_dir = Path(settings.UPLOAD_DIR).absolute()
         
         # Find the image file
         image_path = None
@@ -291,7 +291,7 @@ async def list_images(
     """
     List all uploaded images.
     """
-    upload_dir = Path(settings.UPLOAD_DIR)
+    upload_dir = Path(settings.UPLOAD_DIR).absolute()
     
     if not upload_dir.exists():
         return JSONResponse(content={

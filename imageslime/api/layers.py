@@ -68,7 +68,7 @@ async def create_layer(
         
         # If image_id is provided, associate it with the layer
         if request.image_id:
-            upload_dir = os.path.join(settings.UPLOAD_DIR)
+            upload_dir = os.path.abspath(os.path.join(settings.UPLOAD_DIR))
             for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
                 image_path = os.path.join(upload_dir, f"{request.image_id}{ext}")
                 if os.path.exists(image_path):
