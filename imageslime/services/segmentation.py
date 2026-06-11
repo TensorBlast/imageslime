@@ -722,6 +722,10 @@ class SAM3SegmentationService:
             try:
                 cv2.imwrite(save_path, image_rgba)
                 logger.info(f"Cut: Saved cut image to {save_path}")
+                # Verify the file was actually saved
+                if not os.path.exists(save_path):
+                    logger.error(f"Cut: File not found after save: {save_path}")
+                    return None
             except Exception as e:
                 logger.error(f"Cut: Failed to save image to {save_path}: {e}")
                 return None
