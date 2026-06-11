@@ -57,9 +57,6 @@ class SAM3SegmentationService:
             # The SAM class in Ultralytics automatically uses SAM3 when sam3.pt is loaded
             try:
                 self.model = SAM(model_path)
-                self.model.to(self.device)
-                if self.half_precision:
-                    self.model.half()
                 logger.info("SAM3 model initialized for visual prompts")
                 self.model_loaded = True
             except Exception as e:
@@ -97,16 +94,16 @@ class SAM3SegmentationService:
     
     def compute_embeddings(self, image_path: str) -> Optional[Dict[str, Any]]:
         """
-        Compute and cache embeddings for an image.
+        Pre-load image for faster segmentation.
         
         For SAM3 with Ultralytics, we don't need to pre-compute embeddings separately.
-        The model handles this internally when set_image is called.
+        The model handles this internally. We just cache the image path for reference.
         
         Args:
             image_path: Path to the image file
             
         Returns:
-            Dictionary containing embeddings and metadata, or None if failed
+            Dictionary containing metadata, or None if failed
         """
         if not self.is_available():
             logger.error("SAM3 model not available")
@@ -117,12 +114,12 @@ class SAM3SegmentationService:
             
             # Check cache
             if cache_key in self.embedding_cache:
-                logger.debug(f"Using cached embeddings for {image_path}")
+                logger.debug(f"Using cached reference for {image_path}")
                 return self.embedding_cache[cache_key]
             
-            logger.info(f"Computing embeddings for {image_path}")
+            logger.info(f"Caching reference for {image_path}")
             
-            # Load image
+            # Load image to verify it exists and get dimensions
             image = cv2.imread(image_path)
             if image is None:
                 logger.error(f"Failed to load image: {image_path}")
@@ -131,22 +128,10 @@ class SAM3SegmentationService:
             # Convert to RGB (SAM expects RGB)
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             
-            # Create a new predictor instance for this image
-            # Note: In Ultralytics SAM, the model itself acts as the predictor
-            from ultralytics.models.sam import SAM
-            predictor = SAM(self.settings.SAM3_MODEL_PATH)
-            predictor.to(self.device)
-            if self.half_precision:
-                predictor.half()
-            
-            # Set image - this computes and caches the embeddings internally
-            predictor.set_image(image_rgb)
-            
-            # Store predictor in cache
+            # Store metadata in cache
             embeddings_data = {
                 "image_path": image_path,
                 "image_shape": image_rgb.shape,
-                "predictor": predictor,
                 "timestamp": time.time(),
                 "cache_key": cache_key,
             }
@@ -159,12 +144,12 @@ class SAM3SegmentationService:
                 del self.embedding_cache[oldest_key]
             
             self.embedding_cache[cache_key] = embeddings_data
-            logger.info(f"Embeddings computed and cached for {image_path}")
+            logger.info(f"Image reference cached for {image_path}")
             
             return embeddings_data
             
         except Exception as e:
-            logger.error(f"Failed to compute embeddings for {image_path}: {e}")
+            logger.error(f"Failed to cache image reference for {image_path}: {e}")
             import traceback
             logger.error(traceback.format_exc())
             return None
@@ -209,35 +194,14 @@ class SAM3SegmentationService:
                 predictor = cached_data["predictor"]
                 logger.debug(f"Using cached embeddings for segmentation")
             
+            # Use the main model for prediction
             if predictor is None:
-                # Use the main model if available
-                if self.model is not None:
-                    predictor = self.model
-                    # Load and set image
-                    image = cv2.imread(image_path)
-                    if image is None:
-                        logger.error(f"Failed to load image: {image_path}")
-                        return None
-                    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                    predictor.set_image(image_rgb)
-                else:
-                    # Fallback to creating new predictor
-                    from ultralytics.models.sam import SAM
-                    predictor = SAM(self.settings.SAM3_MODEL_PATH)
-                    predictor.to(self.device)
-                    if self.half_precision:
-                        predictor.half()
-                    
-                    # Load and set image
-                    image = cv2.imread(image_path)
-                    if image is None:
-                        logger.error(f"Failed to load image: {image_path}")
-                        return None
-                    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                    predictor.set_image(image_rgb)
+                predictor = self.model
             
-            # Perform segmentation
+            # Perform segmentation using Ultralytics SAM3 API
+            # Pass image path and prompts directly
             results = predictor.predict(
+                source=image_path,
                 points=sam_points,
                 labels=labels,
                 conf=self.settings.SEGMENTATION_CONFIDENCE,
@@ -315,35 +279,13 @@ class SAM3SegmentationService:
                 cached_data = self.embedding_cache[cache_key]
                 predictor = cached_data["predictor"]
             
+            # Use the main model for prediction
             if predictor is None:
-                # Use the main model if available
-                if self.model is not None:
-                    predictor = self.model
-                    # Load and set image
-                    image = cv2.imread(image_path)
-                    if image is None:
-                        logger.error(f"Failed to load image: {image_path}")
-                        return None
-                    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                    predictor.set_image(image_rgb)
-                else:
-                    # Fallback to creating new predictor
-                    from ultralytics.models.sam import SAM
-                    predictor = SAM(self.settings.SAM3_MODEL_PATH)
-                    predictor.to(self.device)
-                    if self.half_precision:
-                        predictor.half()
-                    
-                    # Load and set image
-                    image = cv2.imread(image_path)
-                    if image is None:
-                        logger.error(f"Failed to load image: {image_path}")
-                        return None
-                    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                    predictor.set_image(image_rgb)
+                predictor = self.model
             
-            # Perform segmentation
+            # Perform segmentation using Ultralytics SAM3 API
             results = predictor.predict(
+                source=image_path,
                 bboxes=[sam_bbox],
                 conf=self.settings.SEGMENTATION_CONFIDENCE,
             )
@@ -412,14 +354,6 @@ class SAM3SegmentationService:
             # Use the semantic model if available
             if self.semantic_model is not None:
                 predictor = self.semantic_model
-                
-                # Set image
-                image = cv2.imread(image_path)
-                if image is None:
-                    logger.error(f"Failed to load image: {image_path}")
-                    return []
-                image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                predictor.set_image(image_rgb)
             else:
                 # Fallback to creating new semantic predictor
                 from ultralytics.models.sam import SAM3SemanticPredictor
@@ -436,7 +370,8 @@ class SAM3SegmentationService:
                 predictor = SAM3SemanticPredictor(overrides=overrides)
             
             # Perform segmentation with text prompt
-            results = predictor(text=[text_prompt])
+            # For SAM3SemanticPredictor, pass source and text together
+            results = predictor(source=image_path, text=[text_prompt])
             
             objects = []
             
@@ -673,16 +608,8 @@ class SAM3SegmentationService:
             # Use the semantic model
             predictor = self.semantic_model
             
-            # Set image
-            image = cv2.imread(image_path)
-            if image is None:
-                logger.error(f"Failed to load image: {image_path}")
-                return {}
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            predictor.set_image(image_rgb)
-            
             # Perform segmentation with all text prompts at once
-            results = predictor(text=text_prompts)
+            results = predictor(source=image_path, text=text_prompts)
             
             # Organize results by prompt
             objects_by_prompt = {}
