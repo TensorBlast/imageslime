@@ -849,6 +849,7 @@
                         rotation: 0,
                         scale: [1, 1],
                         opacity: 1,
+                        visible: true,
                         z_index: state.layers.length + state.objects.length,
                         cropped_image: null
                     };
@@ -1184,23 +1185,20 @@
         }
         
         function bringToFront(itemId, type) {
+            const allItems = [...state.layers, ...state.objects];
+            const maxZ = Math.max(...allItems.map(i => i.z_index), 0);
+            
             if (type === 'object') {
                 const obj = state.objects.find(o => o.id === itemId);
                 if (obj) {
-                    const allItems = [...state.layers, ...state.objects];
-                    const maxZ = Math.max(...allItems.map(i => i.z_index), 0);
                     obj.z_index = maxZ + 1;
-                    sortAllItemsByZIndex();
                     render();
                     saveHistory();
                 }
             } else if (type === 'layer') {
                 const layer = state.layers.find(l => l.id === itemId);
                 if (layer) {
-                    const allItems = [...state.layers, ...state.objects];
-                    const maxZ = Math.max(...allItems.map(i => i.z_index), 0);
                     layer.z_index = maxZ + 1;
-                    sortAllItemsByZIndex();
                     render();
                     saveHistory();
                 }
@@ -1209,37 +1207,25 @@
         }
         
         function sendToBack(itemId, type) {
+            const allItems = [...state.layers, ...state.objects];
+            const minZ = Math.min(...allItems.map(i => i.z_index), 0);
+            
             if (type === 'object') {
                 const obj = state.objects.find(o => o.id === itemId);
                 if (obj) {
-                    const allItems = [...state.layers, ...state.objects];
-                    const minZ = Math.min(...allItems.map(i => i.z_index), 0);
                     obj.z_index = minZ - 1;
-                    sortAllItemsByZIndex();
                     render();
                     saveHistory();
                 }
             } else if (type === 'layer') {
                 const layer = state.layers.find(l => l.id === itemId);
                 if (layer) {
-                    const allItems = [...state.layers, ...state.objects];
-                    const minZ = Math.min(...allItems.map(i => i.z_index), 0);
                     layer.z_index = minZ - 1;
-                    sortAllItemsByZIndex();
                     render();
                     saveHistory();
                 }
             }
             hideContextMenu();
-        }
-        
-        function sortAllItemsByZIndex() {
-            // Sort both layers and objects together by z_index
-            const allItems = [...state.layers, ...state.objects];
-            allItems.sort((a, b) => a.z_index - b.z_index);
-            // Separate back into layers and objects
-            state.layers = allItems.filter(i => i.type === 'image' || !i.type);
-            state.objects = allItems.filter(i => i.type === 'object');
         }
         
         function deleteItem(itemId, type) {
@@ -1268,7 +1254,6 @@
                     copy.z_index = Math.max(...allItems.map(i => i.z_index), 0) + 1;
                     state.objects.push(copy);
                     state.activeObject = copy;
-                    sortAllItemsByZIndex();
                     saveHistory();
                     render();
                 }
@@ -1282,7 +1267,6 @@
                     copy.z_index = Math.max(...allItems.map(i => i.z_index), 0) + 1;
                     state.layers.push(copy);
                     state.activeLayer = copy;
-                    sortAllItemsByZIndex();
                     saveHistory();
                     render();
                 }
@@ -1304,13 +1288,12 @@
         }
         
         function moveForward(itemId, type) {
+            const allItems = [...state.layers, ...state.objects];
+            
             if (type === 'object') {
                 const obj = state.objects.find(o => o.id === itemId);
                 if (obj) {
-                    const allItems = [...state.layers, ...state.objects];
                     const currentZ = obj.z_index;
-                    const nextZ = currentZ + 1;
-                    // Find the next highest z-index
                     const itemsAbove = allItems.filter(i => i.z_index > currentZ);
                     if (itemsAbove.length > 0) {
                         const minAboveZ = Math.min(...itemsAbove.map(i => i.z_index));
@@ -1318,16 +1301,13 @@
                     } else {
                         obj.z_index = currentZ + 1;
                     }
-                    sortAllItemsByZIndex();
                     render();
                     saveHistory();
                 }
             } else if (type === 'layer') {
                 const layer = state.layers.find(l => l.id === itemId);
                 if (layer) {
-                    const allItems = [...state.layers, ...state.objects];
                     const currentZ = layer.z_index;
-                    const nextZ = currentZ + 1;
                     const itemsAbove = allItems.filter(i => i.z_index > currentZ);
                     if (itemsAbove.length > 0) {
                         const minAboveZ = Math.min(...itemsAbove.map(i => i.z_index));
@@ -1335,7 +1315,6 @@
                     } else {
                         layer.z_index = currentZ + 1;
                     }
-                    sortAllItemsByZIndex();
                     render();
                     saveHistory();
                 }
@@ -1344,10 +1323,11 @@
         }
         
         function moveBackward(itemId, type) {
+            const allItems = [...state.layers, ...state.objects];
+            
             if (type === 'object') {
                 const obj = state.objects.find(o => o.id === itemId);
                 if (obj) {
-                    const allItems = [...state.layers, ...state.objects];
                     const currentZ = obj.z_index;
                     const itemsBelow = allItems.filter(i => i.z_index < currentZ);
                     if (itemsBelow.length > 0) {
@@ -1356,14 +1336,12 @@
                     } else {
                         obj.z_index = currentZ - 1;
                     }
-                    sortAllItemsByZIndex();
                     render();
                     saveHistory();
                 }
             } else if (type === 'layer') {
                 const layer = state.layers.find(l => l.id === itemId);
                 if (layer) {
-                    const allItems = [...state.layers, ...state.objects];
                     const currentZ = layer.z_index;
                     const itemsBelow = allItems.filter(i => i.z_index < currentZ);
                     if (itemsBelow.length > 0) {
@@ -1372,7 +1350,6 @@
                     } else {
                         layer.z_index = currentZ - 1;
                     }
-                    sortAllItemsByZIndex();
                     render();
                     saveHistory();
                 }
@@ -1436,21 +1413,47 @@
             state.ctx.scale(state.scale, state.scale);
             state.ctx.translate(state.offset.x / state.scale, state.offset.y / state.scale);
             
-            // Draw layers
-            for (const layer of state.layers) {
+            // Sort layers by z-index
+            const sortedLayers = [...state.layers].sort((a, b) => a.z_index - b.z_index);
+            // Sort objects by z-index
+            const sortedObjects = [...state.objects].sort((a, b) => a.z_index - b.z_index);
+            
+            // Draw layers first (background)
+            for (const layer of sortedLayers) {
                 if (!layer.visible) continue;
                 drawLayer(layer);
             }
             
-            // Draw objects
-            for (const obj of state.objects) {
+            // Draw objects on top
+            for (const obj of sortedObjects) {
+                if (!obj.visible) continue;
                 drawObject(obj);
             }
             
-            // Draw active object highlight
+            // Draw active item highlight
             if (state.activeObject) {
                 drawObjectHighlight(state.activeObject);
+            } else if (state.activeLayer) {
+                drawLayerHighlight(state.activeLayer);
             }
+            
+            state.ctx.restore();
+        }
+        
+        function drawLayerHighlight(layer) {
+            if (!layer.width || !layer.height) return;
+            
+            state.ctx.save();
+            state.ctx.translate(layer.position[0], layer.position[1]);
+            state.ctx.rotate(layer.rotation * Math.PI / 180);
+            state.ctx.scale(layer.scale[0], layer.scale[1]);
+            
+            // Draw highlight
+            state.ctx.strokeStyle = '#ffff00';
+            state.ctx.lineWidth = 3;
+            state.ctx.setLineDash([5, 5]);
+            state.ctx.strokeRect(0, 0, layer.width, layer.height);
+            state.ctx.setLineDash([]);
             
             state.ctx.restore();
         }
