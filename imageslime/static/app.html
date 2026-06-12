@@ -487,6 +487,7 @@
             activeObject: null,
             isDragging: false,
             dragStart: { x: 0, y: 0 },
+            segmentationDragStart: null,
             selectionRect: { start: null, end: null },
             scale: 1,
             offset: { x: 0, y: 0 },
@@ -773,6 +774,9 @@
                         
                         // Start or add to multi-point segmentation
                         addSegmentationPoint(segmentLayer, relX, relY);
+                        
+                        // Set drag start for potential drag-to-finish
+                        state.segmentationDragStart = pos;
                     } else {
                         showStatus('No image at this position', true);
                     }
@@ -1008,6 +1012,7 @@
             state.segmentationPreviewImage = null;
             state.segmentationPreviewImg = null;
             state.segmentationPreviewMaskImg = null;
+            state.segmentationDragStart = null;
             render();
         }
         
@@ -1132,14 +1137,31 @@
             const pos = getMousePos(e);
             
             if (state.isDragging) {
+                const dx = pos.x - state.dragStart.x;
+                const dy = pos.y - state.dragStart.y;
+                const dragDistance = Math.sqrt(dx * dx + dy * dy);
+                
                 state.isDragging = false;
                 
-                // If we were segmenting and dragged, finalize the segmentation
-                if (state.isSegmenting) {
+                // If we were segmenting and dragged a significant distance, finalize the segmentation
+                if (state.isSegmenting && dragDistance > 10) {
                     finishSegmentation();
                 } else {
                     saveHistory();
                 }
+            }
+            
+            // Check for segmentation drag-to-finish
+            if (state.isSegmenting && state.segmentationDragStart) {
+                const dx = pos.x - state.segmentationDragStart.x;
+                const dy = pos.y - state.segmentationDragStart.y;
+                const dragDistance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dragDistance > 10) {
+                    finishSegmentation();
+                }
+                
+                state.segmentationDragStart = null;
             } else if (state.isRotating) {
                 state.isRotating = false;
                 saveHistory();
