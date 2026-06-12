@@ -495,6 +495,7 @@
             historyIndex: -1,
             isDraggingFile: false,
             segmentationDragStart: null,
+            segmentationPendingPoint: null,
             // Segmentation state (multi-point with preview)
             isSegmenting: false,
             segmentationLayer: null,
@@ -772,11 +773,10 @@
                         const relX = pos.x - segmentLayer.position[0];
                         const relY = pos.y - segmentLayer.position[1];
 
-                        // Start or add to multi-point segmentation
-                        addSegmentationPoint(segmentLayer, relX, relY);
-                        
-                        // Set drag start for potential drag-to-finish
+                        // Store the click position but don't add point yet
+                        // We'll decide in onMouseUp whether to add point or finish
                         state.segmentationDragStart = pos;
+                        state.segmentationPendingPoint = { layer: segmentLayer, relX, relY };
                     } else {
                         showStatus('No image at this position', true);
                     }
@@ -1013,6 +1013,7 @@
             state.segmentationPreviewImg = null;
             state.segmentationPreviewMaskImg = null;
             state.segmentationDragStart = null;
+            state.segmentationPendingPoint = null;
             render();
         }
 
@@ -1146,18 +1147,28 @@
                 state.isScaling = false;
                 saveHistory();
             }
-            
+
             // Check for segmentation drag-to-finish
-            if (state.isSegmenting && state.segmentationDragStart) {
+            if (state.segmentationDragStart) {
                 const dx = pos.x - state.segmentationDragStart.x;
                 const dy = pos.y - state.segmentationDragStart.y;
                 const dragDistance = Math.sqrt(dx * dx + dy * dy);
                 
                 if (dragDistance > 10) {
-                    finishSegmentation();
+                    // User dragged - finish segmentation
+                    if (state.isSegmenting && state.segmentationPendingPoint) {
+                        finishSegmentation();
+                    }
+                } else {
+                    // User just clicked - add the point
+                    if (state.segmentationPendingPoint) {
+                        const { layer, relX, relY } = state.segmentationPendingPoint;
+                        addSegmentationPoint(layer, relX, relY);
+                    }
                 }
                 
                 state.segmentationDragStart = null;
+                state.segmentationPendingPoint = null;
             }
 
             if (state.selectionRect.start && state.activeTool === 'select') {
