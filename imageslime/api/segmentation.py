@@ -587,12 +587,16 @@ async def cut_from_image(
         image_path = None
         tried_paths = []
 
-        for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
-            path = os.path.join(upload_dir, f"{request.image_id}{ext}")
-            tried_paths.append(path)
-            if os.path.exists(path):
-                image_path = path
-                break
+        if os.path.exists(os.path.join(upload_dir, f"{request.image_id}.png")):
+            logger.info(f"Cut endpoint: Found PNG file for {request.image_id}, using it for cutting")
+            image_path = os.path.join(upload_dir, f"{request.image_id}.png")
+        else:
+            for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
+                path = os.path.join(upload_dir, f"{request.image_id}{ext}")
+                tried_paths.append(path)
+                if os.path.exists(path):
+                    image_path = path
+                    break
 
         if image_path is None:
             logger.error(f"Cut endpoint: Image not found for id {request.image_id}. Tried paths: {tried_paths}")
