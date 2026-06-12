@@ -852,6 +852,13 @@
                 return;
             }
             
+            // Additional check: ensure this is actually a layer, not an object
+            // Objects have type 'object', layers have type 'image' or undefined
+            if (layer.type === 'object') {
+                showStatus('Cannot segment an object directly. Please click on the source image layer.', true);
+                return;
+            }
+            
             // If clicking on a different layer, reset segmentation
             if (state.segmentationLayer !== layer) {
                 state.segmentationLayer = layer;
@@ -1708,11 +1715,10 @@
                     }
                 }
             } else if (type === 'layer') {
-                // For layers, we can't really "cut" - just copy and delete
-                const layer = state.layers.find(l => l.id === itemId);
-                if (layer) {
-                    _fallbackCut(layer, 'layer');
-                }
+                // For layers, we can't really "cut" - show error
+                showStatus('Cannot cut a layer directly. Please segment an object from the layer first, then cut the object.', true);
+                hideContextMenu();
+                return;
             }
             
             function _fallbackCut(item, itemType) {
