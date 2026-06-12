@@ -446,14 +446,14 @@ async def segment_with_multiple_text(
         upload_dir = os.path.abspath(os.path.join(settings.UPLOAD_DIR))
         image_path = None
         tried_paths = []
-        
+
         for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
             path = os.path.join(upload_dir, f"{request.image_id}{ext}")
             tried_paths.append(path)
             if os.path.exists(path):
                 image_path = path
                 break
-        
+
         if image_path is None:
             logger.error(f"Segmentation text-multiple (v2): Image not found for id {request.image_id}. Tried paths: {tried_paths}")
             raise HTTPException(
@@ -617,20 +617,36 @@ async def cut_from_image(
 
         # Cut the masked region from the source image
         logger.info(f"Cut endpoint: About to cut image {request.image_id} at path {image_path}")
+        logger.info(f"Cut endpoint: Mask shape info - mask_base64 length: {len(request.mask_base64) if request.mask_base64 else 0}")
+        logger.info(f"Cut endpoint: Bounding box: {request.bounding_box}")
+        
         updated_image_base64 = seg_service.cut_from_image(
             image_path=image_path,
             mask=mask,
             fill_color=None  # Make transparent
         )
-
+        
         if updated_image_base64 is None:
             logger.error(f"Cut endpoint: cut_from_image returned None for {request.image_id}")
+            # Check if the file still exists
+            if os.path.exists(image_path):
+                logger.error(f"Cut endpoint: Original file still exists at {image_path}")
+            else:
+                logger.error(f"Cut endpoint: Original file does not exist at {image_path}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to cut from image"
             )
-
+        
         logger.info(f"Cut endpoint: Successful for {request.image_id}, returning base64")
+        # Check if PNG file was created
+        png_path = image_path.rsplit('.', 1)[0] + '.png' if not image_path.lower().endswith('.png') else image_path
+        if os.path.exists(png_path):
+            logger.info(f"Cut endpoint: PNG file exists at {png_path}")
+        else:
+            logger.error(f"Cut endpoint: WARNING - PNG file NOT found at {png_path}")
+        if os.path.exists(image_path) and not image_path.lower().endswith('.png'):
+            logger.error(f"Cut endpoint: WARNING - Original file still exists at {image_path}")
 
         return JSONResponse(content={
             "success": True,
