@@ -732,7 +732,6 @@ class SAM3SegmentationService:
             
             # If we changed the extension, delete the original file
             if save_path != image_path:
-                import os
                 try:
                     os.remove(image_path)
                     logger.info(f"Cut: Removed original file: {image_path}")
