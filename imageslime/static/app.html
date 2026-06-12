@@ -12,7 +12,7 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #1a1a2e;
@@ -20,14 +20,14 @@
             min-height: 100vh;
             overflow: hidden;
         }
-        
+
         #app-container {
             display: flex;
             height: calc(100vh - 80px);
             width: 100vw;
             margin-top: 50px;
         }
-        
+
         #sidebar {
             width: 280px;
             background: #16213e;
@@ -37,14 +37,14 @@
             flex-direction: column;
             overflow-y: auto;
         }
-        
+
         #canvas-container {
             flex: 1;
             position: relative;
             overflow: hidden;
             background: #2a2a3a;
         }
-        
+
         #main-canvas {
             position: absolute;
             top: 0;
@@ -52,7 +52,7 @@
             cursor: crosshair;
             touch-action: none;
         }
-        
+
         #toolbar {
             position: fixed;
             top: 0;
@@ -68,7 +68,7 @@
             overflow-x: auto;
             z-index: 100;
         }
-        
+
         #status-bar {
             position: fixed;
             bottom: 0;
@@ -85,7 +85,7 @@
             border-top: 1px solid #0f3460;
             z-index: 100;
         }
-        
+
         .section-title {
             font-size: 0.85em;
             text-transform: uppercase;
@@ -95,13 +95,13 @@
             padding: 10px;
             border-bottom: 1px solid #0f3460;
         }
-        
+
         #layers-list, #objects-list {
             display: flex;
             flex-direction: column;
             gap: 5px;
         }
-        
+
         .layer-item, .object-item {
             padding: 10px;
             margin: 2px 0;
@@ -113,16 +113,16 @@
             transition: all 0.3s;
             border: 1px solid transparent;
         }
-        
+
         .layer-item:hover, .object-item:hover {
             background: rgba(255, 255, 255, 0.05);
         }
-        
+
         .layer-item.active, .object-item.active {
             background: rgba(102, 126, 234, 0.15);
             border-color: #4a8ac2;
         }
-        
+
         .layer-thumbnail, .object-thumbnail {
             width: 40px;
             height: 40px;
@@ -132,7 +132,7 @@
             object-fit: cover;
             flex-shrink: 0;
         }
-        
+
         .layer-name, .object-name {
             flex: 1;
             font-size: 0.9em;
@@ -140,12 +140,12 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        
+
         .layer-controls, .object-controls {
             display: flex;
             gap: 5px;
         }
-        
+
         .layer-controls button, .object-controls button {
             background: transparent;
             border: none;
@@ -156,12 +156,12 @@
             font-size: 0.8em;
             transition: all 0.2s;
         }
-        
+
         .layer-controls button:hover, .object-controls button:hover {
             background: rgba(255, 255, 255, 0.1);
             color: #fff;
         }
-        
+
         .tool-btn {
             background: transparent;
             border: none;
@@ -176,23 +176,23 @@
             font-size: 0.9em;
             white-space: nowrap;
         }
-        
+
         .tool-btn:hover {
             background: rgba(255, 255, 255, 0.05);
             color: #fff;
         }
-        
+
         .tool-btn.active {
             background: rgba(102, 126, 234, 0.2);
             color: #4a8ac2;
             border: 1px solid #4a8ac2;
         }
-        
+
         #upload-btn {
             position: relative;
             overflow: hidden;
         }
-        
+
         #upload-input {
             position: absolute;
             top: 0;
@@ -202,11 +202,11 @@
             opacity: 0;
             cursor: pointer;
         }
-        
+
         .coords {
             color: #4a8ac2;
         }
-        
+
         .context-menu {
             position: absolute;
             background: #16213e;
@@ -218,11 +218,11 @@
             min-width: 180px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
-        
+
         .context-menu.show {
             display: block;
         }
-        
+
         .context-menu-item {
             padding: 8px 15px;
             color: #ccc;
@@ -232,12 +232,12 @@
             align-items: center;
             gap: 8px;
         }
-        
+
         .context-menu-item:hover {
             background: #0f3460;
             color: #fff;
         }
-        
+
         .modal {
             position: fixed;
             top: 0;
@@ -251,11 +251,11 @@
             z-index: 2000;
             backdrop-filter: blur(5px);
         }
-        
+
         .modal.show {
             display: flex;
         }
-        
+
         .modal-content {
             background: #16213e;
             padding: 30px;
@@ -266,13 +266,13 @@
             overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
         }
-        
+
         .modal-content h3 {
             margin-bottom: 20px;
             color: #fff;
             font-size: 1.3em;
         }
-        
+
         .btn {
             padding: 10px 20px;
             border: none;
@@ -285,27 +285,27 @@
             align-items: center;
             gap: 8px;
         }
-        
+
         .btn-primary {
             background: #4a8ac2;
             color: #fff;
         }
-        
+
         .btn-primary:hover {
             background: #5a9bd2;
         }
-        
+
         .btn-secondary {
             background: #0f3460;
             color: #ccc;
             border: 1px solid #1a4a7a;
         }
-        
+
         .btn-secondary:hover {
             background: #1a4a7a;
             color: #fff;
         }
-        
+
         .spinner {
             width: 40px;
             height: 40px;
@@ -314,11 +314,11 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        
+
         #selection-rect {
             position: absolute;
             border: 2px dashed #4a8ac2;
@@ -327,11 +327,11 @@
             z-index: 100;
             display: none;
         }
-        
+
         #selection-rect.show {
             display: block;
         }
-        
+
         .upload-area {
             position: absolute;
             top: 0;
@@ -344,7 +344,7 @@
             justify-content: center;
             pointer-events: none;
         }
-        
+
         .upload-overlay {
             position: absolute;
             top: 0;
@@ -362,27 +362,27 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
-        
+
         .upload-overlay.drag-over {
             pointer-events: auto;
         }
-        
+
         .upload-overlay.drag-over {
             opacity: 1;
         }
-        
+
         .upload-overlay .upload-icon {
             font-size: 4em;
             margin-bottom: 20px;
             color: #4a8ac2;
         }
-        
+
         .upload-overlay .upload-text {
             font-size: 1.2em;
             color: #ccc;
             margin-bottom: 10px;
         }
-        
+
         .upload-overlay .upload-hint {
             font-size: 0.9em;
             color: #888;
@@ -394,10 +394,10 @@
         <div id="sidebar">
             <div class="section-title">Layers</div>
             <div id="layers-list"></div>
-            
+
             <div class="section-title">Objects</div>
             <div id="objects-list"></div>
-            
+
             <div class="section-title">Tools</div>
             <div id="tools-list">
                 <button class="tool-btn" onclick="setTool('select')" id="tool-select">
@@ -417,7 +417,7 @@
                 </button>
             </div>
         </div>
-        
+
         <div id="canvas-container">
             <canvas id="main-canvas"></canvas>
             <div id="selection-rect" class="selection-rect"></div>
@@ -429,7 +429,7 @@
             <div id="context-menu" class="context-menu"></div>
         </div>
     </div>
-    
+
     <div id="toolbar" style="position: fixed; top: 0; left: 0; right: 0; z-index: 100;">
         <label class="tool-btn" id="upload-btn" for="upload-input" style="margin-left: 20px;">
             📁 Upload
@@ -448,21 +448,21 @@
             ➡️ Redo
         </button>
     </div>
-    
+
     <div id="zoom-controls" style="position: fixed; bottom: 30px; left: 20px; z-index: 100; display: flex; align-items: center; gap: 10px;">
         <span style="color: #ccc;">Zoom:</span>
-        <input type="range" id="zoom-slider" min="0.1" max="3" step="0.1" value="1" 
-               style="width: 150px;" 
+        <input type="range" id="zoom-slider" min="0.1" max="3" step="0.1" value="1"
+               style="width: 150px;"
                oninput="updateZoom(this.value)">
         <span id="zoom-value" style="color: #ccc;">100%</span>
         <button class="tool-btn" onclick="resetZoom()" style="padding: 5px 10px;">Reset</button>
     </div>
-    
+
     <div id="status-bar">
         <span class="coords" id="mouse-coords">X: 0, Y: 0</span>
         <span id="status-message">Ready</span>
     </div>
-    
+
     <div id="modal" class="modal">
         <div class="modal-content">
             <h3 id="modal-title">Title</h3>
@@ -473,7 +473,7 @@
             </div>
         </div>
     </div>
-    
+
     <script>
         // Application state
         const state = {
@@ -487,7 +487,6 @@
             activeObject: null,
             isDragging: false,
             dragStart: { x: 0, y: 0 },
-            segmentationDragStart: null,
             selectionRect: { start: null, end: null },
             scale: 1,
             offset: { x: 0, y: 0 },
@@ -495,6 +494,7 @@
             history: [],
             historyIndex: -1,
             isDraggingFile: false,
+            segmentationDragStart: null,
             // Segmentation state (multi-point with preview)
             isSegmenting: false,
             segmentationLayer: null,
@@ -514,48 +514,48 @@
             // Z-index counter
             nextZIndex: 0
         };
-        
+
         // Initialize application
         function init() {
             state.canvas = document.getElementById('main-canvas');
             state.ctx = state.canvas.getContext('2d');
-            
+
             // Set canvas size
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
-            
+
             // Setup event listeners
             setupEventListeners();
-            
+
             // Setup upload
             setupUpload();
-            
+
             // Load any existing project
             loadProject();
-            
+
             // Check SAM3 status
             checkSAM3Status();
-            
+
             // Start render loop
             requestAnimationFrame(render);
         }
-        
+
         function resizeCanvas() {
             const container = document.getElementById('canvas-container');
             state.canvas.width = container.clientWidth;
             state.canvas.height = container.clientHeight;
             render();
         }
-        
+
         function setupUpload() {
             // File input change handler
             const uploadInput = document.getElementById('upload-input');
             uploadInput.addEventListener('change', handleUpload);
-            
+
             // Drag and drop setup
             const canvasContainer = document.getElementById('canvas-container');
             const uploadOverlay = document.getElementById('upload-overlay');
-            
+
             // Drag enter
             canvasContainer.addEventListener('dragenter', function(e) {
                 e.preventDefault();
@@ -563,7 +563,7 @@
                 state.isDraggingFile = true;
                 uploadOverlay.classList.add('drag-over');
             });
-            
+
             // Drag leave
             canvasContainer.addEventListener('dragleave', function(e) {
                 e.preventDefault();
@@ -571,57 +571,57 @@
                 state.isDraggingFile = false;
                 uploadOverlay.classList.remove('drag-over');
             });
-            
+
             // Drag over
             canvasContainer.addEventListener('dragover', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
             });
-            
+
             // Drop
             canvasContainer.addEventListener('drop', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 state.isDraggingFile = false;
                 uploadOverlay.classList.remove('drag-over');
-                
+
                 // Handle dropped files
                 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                     handleDroppedFiles(e.dataTransfer.files);
                 }
             });
-            
+
             // Click on upload label - handled by HTML for attribute
-            
+
             // Click on upload overlay
             uploadOverlay.addEventListener('click', function(e) {
                 e.preventDefault();
                 uploadInput.click();
             });
         }
-        
+
         function handleUpload(e) {
             const files = e.target.files;
             if (!files || files.length === 0) return;
-            
+
             showStatus(`Uploading ${files.length} file(s)...`);
-            
+
             for (let i = 0; i < files.length; i++) {
                 uploadFile(files[i]);
             }
-            
+
             // Reset input so we can upload the same file again
             e.target.value = '';
         }
-        
+
         function handleDroppedFiles(files) {
             showStatus(`Uploading ${files.length} dropped file(s)...`);
-            
+
             for (let i = 0; i < files.length; i++) {
                 uploadFile(files[i]);
             }
         }
-        
+
         function uploadFile(file) {
             // Validate file type
             const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -629,16 +629,16 @@
                 showStatus(`Skipping ${file.name}: Invalid file type`, true);
                 return;
             }
-            
+
             // Validate file size (10MB max)
             if (file.size > 10 * 1024 * 1024) {
                 showStatus(`Skipping ${file.name}: File too large (max 10MB)`, true);
                 return;
             }
-            
+
             const formData = new FormData();
             formData.append('file', file);
-            
+
             fetch('/api/v1/images/upload', {
                 method: 'POST',
                 body: formData
@@ -670,7 +670,7 @@
                         z_index: state.nextZIndex++,
                         image_obj: null  // Will be loaded async
                     };
-                    
+
                     // Pre-load the image
                     const img = new Image();
                     img.onload = function() {
@@ -678,14 +678,14 @@
                         render();
                     };
                     img.src = data.thumbnail_base64;
-                    
+
                     state.layers.push(layer);
                     state.activeLayer = layer;
                     updateLayersList();
                     saveHistory();
                     render();
                     showStatus(`Image uploaded: ${file.name}`);
-                    
+
                     // Pre-compute embeddings for faster segmentation
                     computeEmbeddings(data.image_id);
                 } else {
@@ -697,7 +697,7 @@
                 console.error('Upload error:', error);
             });
         }
-        
+
         function computeEmbeddings(imageId) {
             fetch(`/api/v1/images/${imageId}/compute-embeddings`, {
                 method: 'POST'
@@ -712,7 +712,7 @@
                 console.error('Failed to compute embeddings:', error);
             });
         }
-        
+
         function setupEventListeners() {
             // Mouse events
             state.canvas.addEventListener('mousedown', onMouseDown);
@@ -720,27 +720,27 @@
             state.canvas.addEventListener('mouseup', onMouseUp);
             state.canvas.addEventListener('mouseleave', onMouseLeave);
             state.canvas.addEventListener('wheel', onWheel);
-            
+
             // Keyboard events
             document.addEventListener('keydown', onKeyDown);
-            
+
             // Context menu
             state.canvas.addEventListener('contextmenu', onContextMenu);
         }
-        
+
         function onMouseDown(e) {
             // If we're dragging a file, don't process mouse events
             if (state.isDraggingFile) return;
-            
+
             const pos = getMousePos(e);
             state.mousePos = pos;
             updateMouseCoords(pos);
-            
+
             // Check if we clicked on any layer (image or object) for direct dragging
             const clickedLayer = getLayerAtPosition(pos);
             const clickedObj = getObjectAtPosition(pos);
             const clickedItem = clickedLayer || clickedObj;
-            
+
             // If we clicked on something and not using a specific tool, start dragging
             if (clickedItem && state.activeTool === 'select') {
                 state.activeObject = clickedObj || null;
@@ -755,7 +755,7 @@
                 e.preventDefault();
                 return;
             }
-            
+
             switch (state.activeTool) {
                 case 'select':
                     // Start selection rectangle
@@ -763,7 +763,7 @@
                     state.selectionRect.end = pos;
                     updateSelectionRect();
                     break;
-                    
+
                 case 'segment':
                     // Check if we clicked on a layer
                     const segmentLayer = getLayerAtPosition(pos);
@@ -771,7 +771,7 @@
                         // Calculate position relative to layer
                         const relX = pos.x - segmentLayer.position[0];
                         const relY = pos.y - segmentLayer.position[1];
-                        
+
                         // Start or add to multi-point segmentation
                         addSegmentationPoint(segmentLayer, relX, relY);
                         
@@ -781,7 +781,7 @@
                         showStatus('No image at this position', true);
                     }
                     break;
-                    
+
                 case 'move':
                     // Check if we clicked on an object to move
                     const objToMove = getObjectAtPosition(pos);
@@ -795,7 +795,7 @@
                         showStatus('No object at this position to move', true);
                     }
                     break;
-                    
+
                 case 'rotate':
                     // Check if we clicked on an object to rotate
                     const objToRotate = getObjectAtPosition(pos);
@@ -808,13 +808,13 @@
                         showStatus('No object at this position to rotate', true);
                     }
                     break;
-                    
+
                 case 'scale':
                     // Check if we clicked on an object or layer to scale
                     const objToScale = getObjectAtPosition(pos);
                     const layerToScale = getLayerAtPosition(pos);
                     const itemToScale = objToScale || layerToScale;
-                    
+
                     if (itemToScale) {
                         if (objToScale) {
                             state.activeObject = objToScale;
@@ -830,7 +830,7 @@
                         showStatus('No item at this position to scale', true);
                     }
                     break;
-                    
+
                 default:
                     // Try to select object at this position
                     const objToSelect = getObjectAtPosition(pos);
@@ -840,7 +840,7 @@
                     }
             }
         }
-        
+
         // Multi-point segmentation with preview and merge
         function addSegmentationPoint(layer, relX, relY) {
             // Debug: log what's being passed
@@ -849,20 +849,20 @@
             console.log('layer.type:', layer?.type);
             console.log('Is in state.layers?', state.layers.find(l => l.id === layer?.id) !== undefined);
             console.log('Is in state.objects?', state.objects.find(o => o.id === layer?.id) !== undefined);
-            
+
             // If layer is null or not in layers, don't proceed
             if (!layer || !state.layers.find(l => l.id === layer.id)) {
                 showStatus('Cannot segment: layer not found', true);
                 return;
             }
-            
+
             // Additional check: ensure this is actually a layer, not an object
             // Objects have type 'object', layers have type 'image' or undefined
             if (layer.type === 'object') {
                 showStatus('Cannot segment an object directly. Please click on the source image layer.', true);
                 return;
             }
-            
+
             // If clicking on a different layer, reset segmentation
             if (state.segmentationLayer !== layer) {
                 state.segmentationLayer = layer;
@@ -873,26 +873,26 @@
                 state.segmentationPreviewMaskImg = null;
                 state.segmentationPreviewImg = null;
             }
-            
+
             // Add new point
             state.segmentationPoints.push({ x: relX, y: relY });
             state.isSegmenting = true;
-            
+
             // Request updated mask preview
             updateSegmentationPreview(layer);
         }
-        
+
         function updateSegmentationPreview(layer) {
             if (state.segmentationPoints.length === 0) return;
-            
+
             showStatus(`Segmenting... (${state.segmentationPoints.length} points - click more, drag to finish, or press Enter)`);
-            
+
             // Debug: log layer info
             console.log('Segmentation: layer.id =', layer.id);
             console.log('Segmentation: layer.image_path =', layer.image_path);
             console.log('Segmentation: state.segmentationLayer =', state.segmentationLayer);
             console.log('Segmentation: state.layers =', state.layers.map(l => l.id));
-            
+
             // Send all points to backend
             fetch('/api/v1/segmentation/points', {
                 method: 'POST',
@@ -919,7 +919,7 @@
                     state.segmentationPreviewMask = data.mask_base64;
                     state.segmentationPreviewBbox = data.bounding_box;
                     state.segmentationPreviewImage = data.cropped_image_base64;
-                    
+
                     // Use the red preview mask from backend - always update on new data
                     if (data.preview_mask_base64) {
                         const maskImg = new Image();
@@ -930,7 +930,7 @@
                         };
                         state.segmentationPreviewMaskImg = maskImg;
                     }
-                    
+
                     // Pre-load preview image - always update on new data
                     const img = new Image();
                     img.onload = function() {
@@ -938,7 +938,7 @@
                         render();
                     };
                     img.src = data.cropped_image_base64;
-                    
+
                     render();
                     showStatus(`Segmentation preview (${state.segmentationPoints.length} points - click more or drag to finish)`);
                 } else {
@@ -957,22 +957,22 @@
                 showStatus(errorMsg, true);
             });
         }
-        
+
         function finishSegmentation() {
             if (!state.isSegmenting || !state.segmentationLayer) return;
-            
+
             const layer = state.segmentationLayer;
             const bbox = state.segmentationPreviewBbox;
-            
+
             if (!bbox) {
                 showStatus('No segmentation to finalize', true);
                 return;
             }
-            
+
             // Calculate center position
             const centerX = layer.position[0] + bbox.x1 + (bbox.x2 - bbox.x1) / 2;
             const centerY = layer.position[1] + bbox.y1 + (bbox.y2 - bbox.y1) / 2;
-            
+
             // Create object
             const obj = {
                 id: `obj_${Date.now()}`,
@@ -991,18 +991,18 @@
                 z_index: state.nextZIndex++,
                 cropped_image: state.segmentationPreviewImg
             };
-            
+
             state.objects.push(obj);
             state.activeObject = obj;
             saveHistory();
             updateLayersList();
             render();
             showStatus('Object created! Right-click to cut, copy, or delete.');
-            
+
             // Reset segmentation state
             resetSegmentation();
         }
-        
+
         function resetSegmentation() {
             state.isSegmenting = false;
             state.segmentationLayer = null;
@@ -1015,11 +1015,11 @@
             state.segmentationDragStart = null;
             render();
         }
-        
+
         // NEW: One-click segmentation (fallback)
         function createSegmentedObject(layer, relX, relY) {
             showStatus('Segmenting...');
-            
+
             // Send single-point segmentation request
             fetch('/api/v1/segmentation/points', {
                 method: 'POST',
@@ -1037,7 +1037,7 @@
                     const bbox = data.bounding_box;
                     const objX = layer.position[0] + relX - (bbox.x2 - bbox.x1) / 2;
                     const objY = layer.position[1] + relY - (bbox.y2 - bbox.y1) / 2;
-                    
+
                     // Create new object layer
                     const obj = {
                         id: `obj_${Date.now()}`,
@@ -1056,7 +1056,7 @@
                         z_index: state.nextZIndex++,
                         cropped_image: null
                     };
-                    
+
                     // Pre-load the cropped image
                     const croppedImg = new Image();
                     croppedImg.src = data.cropped_image_base64;
@@ -1065,7 +1065,7 @@
                         render();
                     };
                     obj.cropped_image = croppedImg;
-                    
+
                     // Add to objects
                     state.objects.push(obj);
                     state.activeObject = obj;
@@ -1082,22 +1082,22 @@
                 console.error('Segmentation error:', error);
             });
         }
-        
+
         // OLD MULTI-POINT SYSTEM (removed)
         // OLD SEGMENTATION FUNCTIONS (deprecated)
         // Replaced with createSegmentedObject for one-click workflow
         // function segmentAtPoint(pos, layer) { ... }
-        
+
         function onMouseMove(e) {
             const pos = getMousePos(e);
             state.mousePos = pos;
             updateMouseCoords(pos);
-            
+
             if (state.isDragging) {
                 // Handle dragging for both objects and layers
                 const dx = pos.x - state.dragStart.x;
                 const dy = pos.y - state.dragStart.y;
-                
+
                 if (state.activeObject) {
                     state.activeObject.position[0] += dx;
                     state.activeObject.position[1] += dy;
@@ -1107,7 +1107,7 @@
                 }
                 state.dragStart = pos;
                 render();
-                
+
             } else if (state.isRotating && state.activeObject) {
                 // Handle rotation
                 const centerX = state.activeObject.position[0];
@@ -1115,7 +1115,7 @@
                 const angle = calculateAngle(centerX, centerY, pos.x, pos.y);
                 state.activeObject.rotation = state.rotationStart + angle;
                 render();
-                
+
             } else if (state.isScaling && (state.activeObject || state.activeLayer)) {
                 // Handle scaling for both objects and layers
                 const item = state.activeObject || state.activeLayer;
@@ -1125,30 +1125,26 @@
                 item.scale[0] = state.originalScale[0] * scaleFactor;
                 item.scale[1] = state.originalScale[1] * scaleFactor;
                 render();
-                
+
             } else if (state.selectionRect.start && state.activeTool === 'select') {
                 // Update selection rectangle
                 state.selectionRect.end = pos;
                 updateSelectionRect();
             }
         }
-        
+
         function onMouseUp(e) {
             const pos = getMousePos(e);
-            
+
             if (state.isDragging) {
-                const dx = pos.x - state.dragStart.x;
-                const dy = pos.y - state.dragStart.y;
-                const dragDistance = Math.sqrt(dx * dx + dy * dy);
-                
                 state.isDragging = false;
-                
-                // If we were segmenting and dragged a significant distance, finalize the segmentation
-                if (state.isSegmenting && dragDistance > 10) {
-                    finishSegmentation();
-                } else {
-                    saveHistory();
-                }
+                saveHistory();
+            } else if (state.isRotating) {
+                state.isRotating = false;
+                saveHistory();
+            } else if (state.isScaling) {
+                state.isScaling = false;
+                saveHistory();
             }
             
             // Check for segmentation drag-to-finish
@@ -1162,33 +1158,27 @@
                 }
                 
                 state.segmentationDragStart = null;
-            } else if (state.isRotating) {
-                state.isRotating = false;
-                saveHistory();
-            } else if (state.isScaling) {
-                state.isScaling = false;
-                saveHistory();
             }
-            
+
             if (state.selectionRect.start && state.activeTool === 'select') {
                 // Complete selection
                 state.selectionRect.end = pos;
                 updateSelectionRect();
-                
+
                 // Check if we selected any objects
                 const selected = getObjectsInRect(state.selectionRect);
                 if (selected.length > 0) {
                     // For now, just select the first one
                     state.activeObject = selected[0];
                 }
-                
+
                 // Clear selection rectangle
                 state.selectionRect.start = null;
                 state.selectionRect.end = null;
                 updateSelectionRect();
             }
         }
-        
+
         function onMouseLeave(e) {
             // Clear selection rectangle if we leave the canvas
             if (state.selectionRect.start) {
@@ -1197,7 +1187,7 @@
                 updateSelectionRect();
             }
         }
-        
+
         function onWheel(e) {
             e.preventDefault();
             const delta = e.deltaY > 0 ? 0.9 : 1.1;
@@ -1206,7 +1196,7 @@
             document.getElementById('zoom-value').textContent = `${Math.round(state.scale * 100)}%`;
             render();
         }
-        
+
         function onKeyDown(e) {
             // Handle keyboard shortcuts
             switch (e.key) {
@@ -1221,13 +1211,13 @@
                         render();
                     }
                     break;
-                    
+
                 case 'Enter':
                     if (state.isSegmenting) {
                         finishSegmentation();
                     }
                     break;
-                    
+
                 case 'Delete':
                 case 'Backspace':
                     if (state.activeObject) {
@@ -1236,8 +1226,9 @@
                         removeLayer(state.activeLayer);
                     }
                     break;
-                
+
                 case 'c':
+                case 'C':
                     // CMD+C or Ctrl+C: Copy selected item
                     if (e.metaKey || e.ctrlKey) {
                         e.preventDefault();
@@ -1247,20 +1238,19 @@
                             copyItem(state.activeLayer.id, 'layer');
                         }
                     }
-                    break;
-                
-                case 'C':
-                    // C key: Cut selected item (without CMD/Ctrl)
-                    if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                    // C key (without CMD/Ctrl): Cut selected object
+                    else if (!e.altKey) {
                         e.preventDefault();
                         if (state.activeObject) {
                             cutItem(state.activeObject.id, 'object');
                         } else if (state.activeLayer) {
-                            showStatus('Select an object to cut, or use the context menu on a layer.', true);
+                            showStatus('Cannot cut a layer directly. Please segment an object first, then cut the object.', true);
+                        } else {
+                            showStatus('No item selected to cut.', true);
                         }
                     }
                     break;
-                
+
                 case 'x':
                     // CMD+X or Ctrl+X: Cut selected item (copy then delete AND remove from source)
                     if (e.metaKey || e.ctrlKey) {
@@ -1272,7 +1262,7 @@
                         }
                     }
                     break;
-                
+
                 case 'a':
                     // CMD+A or Ctrl+A: Select all
                     if (e.metaKey || e.ctrlKey) {
@@ -1288,7 +1278,7 @@
                         render();
                     }
                     break;
-                    
+
                 case '1':
                     setTool('select');
                     break;
@@ -1306,11 +1296,11 @@
                     break;
             }
         }
-        
+
         function onContextMenu(e) {
             e.preventDefault();
             const pos = getMousePos(e);
-            
+
             // Check if we clicked on an object first (objects are on top)
             const obj = getObjectAtPosition(pos);
             if (obj) {
@@ -1320,7 +1310,7 @@
                 showContextMenu(e.clientX, e.clientY, obj, 'object');
                 return;
             }
-            
+
             // Check if we clicked on a layer
             const layer = getLayerAtPosition(pos);
             if (layer) {
@@ -1331,7 +1321,7 @@
                 return;
             }
         }
-        
+
         function getMousePos(e) {
             const rect = state.canvas.getBoundingClientRect();
             return {
@@ -1339,20 +1329,20 @@
                 y: (e.clientY - rect.top - state.offset.y) / state.scale
             };
         }
-        
+
         function calculateAngle(centerX, centerY, mouseX, mouseY) {
             // Calculate angle in degrees between center and mouse position
             const dx = mouseX - centerX;
             const dy = mouseY - centerY;
             return Math.atan2(dy, dx) * (180 / Math.PI);
         }
-        
+
         function updateZoom(zoomLevel) {
             state.scale = parseFloat(zoomLevel);
             document.getElementById('zoom-value').textContent = `${Math.round(zoomLevel * 100)}%`;
             render();
         }
-        
+
         function resetZoom() {
             state.scale = 1;
             state.offset = { x: 0, y: 0 };
@@ -1360,18 +1350,18 @@
             document.getElementById('zoom-value').textContent = '100%';
             render();
         }
-        
+
         function updateMouseCoords(pos) {
-            document.getElementById('mouse-coords').textContent = 
+            document.getElementById('mouse-coords').textContent =
                 `X: ${Math.round(pos.x)}, Y: ${Math.round(pos.y)}`;
         }
-        
+
         function updateSelectionRect() {
             const rectEl = document.getElementById('selection-rect');
             if (state.selectionRect.start && state.selectionRect.end) {
                 const start = state.selectionRect.start;
                 const end = state.selectionRect.end;
-                
+
                 rectEl.style.left = `${Math.min(start.x, end.x) * state.scale + state.offset.x}px`;
                 rectEl.style.top = `${Math.min(start.y, end.y) * state.scale + state.offset.y}px`;
                 rectEl.style.width = `${Math.abs(end.x - start.x) * state.scale}px`;
@@ -1381,21 +1371,21 @@
                 rectEl.style.display = 'none';
             }
         }
-        
+
         function setTool(tool) {
             state.activeTool = tool;
             updateToolButtons();
-            document.getElementById('status-message').textContent = 
+            document.getElementById('status-message').textContent =
                 `Tool: ${tool.charAt(0).toUpperCase() + tool.slice(1)}`;
         }
-        
+
         function updateToolButtons() {
             document.querySelectorAll('.tool-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             document.getElementById(`tool-${state.activeTool}`).classList.add('active');
         }
-        
+
         function getLayerAtPosition(pos) {
             // Check layers in reverse order (top to bottom)
             console.log('getLayerAtPosition: checking', state.layers.length, 'layers');
@@ -1410,31 +1400,31 @@
             console.log('getLayerAtPosition: NO layer found at position', pos);
             return null;
         }
-        
+
         function isPointInLayer(pos, layer) {
             // Check if point is within layer bounds, accounting for scale and rotation
             // Transform point into layer's local coordinate system
-            
+
             // Translate point relative to layer position
             let localX = pos.x - layer.position[0];
             let localY = pos.y - layer.position[1];
-            
+
             // Apply inverse rotation
             const angleRad = -layer.rotation * Math.PI / 180;
             const cosA = Math.cos(angleRad);
             const sinA = Math.sin(angleRad);
             const rotatedX = localX * cosA - localY * sinA;
             const rotatedY = localX * sinA + localY * cosA;
-            
+
             // Apply inverse scale
             const scaledX = rotatedX / layer.scale[0];
             const scaledY = rotatedY / layer.scale[1];
-            
+
             // Check if in original layer bounds
             return scaledX >= 0 && scaledX <= layer.width &&
                    scaledY >= 0 && scaledY <= layer.height;
         }
-        
+
         function getObjectAtPosition(pos) {
             // Check objects in reverse order (top to bottom)
             for (let i = state.objects.length - 1; i >= 0; i--) {
@@ -1445,40 +1435,40 @@
             }
             return null;
         }
-        
+
         function isPointInBox(pos, obj) {
             if (!obj.bounding_box) return false;
-            
+
             const bbox = obj.bounding_box;
             // Account for object's position, scale, and rotation
             // We need to transform the point into the object's local coordinate system
-            
+
             // First, translate point relative to object position
             let localX = pos.x - obj.position[0];
             let localY = pos.y - obj.position[1];
-            
+
             // Apply inverse rotation
             const angleRad = -obj.rotation * Math.PI / 180;
             const cosA = Math.cos(angleRad);
             const sinA = Math.sin(angleRad);
             const rotatedX = localX * cosA - localY * sinA;
             const rotatedY = localX * sinA + localY * cosA;
-            
+
             // Apply inverse scale
             const scaledX = rotatedX / obj.scale[0];
             const scaledY = rotatedY / obj.scale[1];
-            
+
             // Check if in bounding box (which is in object's local untransformed coordinates)
-            return scaledX >= bbox.x1 && scaledX <= bbox.x2 && 
+            return scaledX >= bbox.x1 && scaledX <= bbox.x2 &&
                    scaledY >= bbox.y1 && scaledY <= bbox.y2;
         }
-        
+
         function getObjectsInRect(rect) {
             const minX = Math.min(rect.start.x, rect.end.x);
             const maxX = Math.max(rect.start.x, rect.end.x);
             const minY = Math.min(rect.start.y, rect.end.y);
             const maxY = Math.max(rect.start.y, rect.end.y);
-            
+
             return state.objects.filter(obj => {
                 if (!obj.bounding_box) return false;
                 const bbox = obj.bounding_box;
@@ -1487,11 +1477,11 @@
                 const objY1 = obj.position[1] + bbox.y1;
                 const objX2 = obj.position[0] + bbox.x2;
                 const objY2 = obj.position[1] + bbox.y2;
-                return !(objX2 < minX || objX1 > maxX || 
+                return !(objX2 < minX || objX1 > maxX ||
                          objY2 < minY || objY1 > maxY);
             });
         }
-        
+
         function removeObject(obj) {
             const index = state.objects.indexOf(obj);
             if (index > -1) {
@@ -1503,14 +1493,14 @@
                 render();
             }
         }
-        
+
         function showContextMenu(x, y, item, type = 'object') {
             const menu = document.getElementById('context-menu');
             const itemId = item.id;
-            
+
             // Determine if it's a layer or object
             const isLayer = type === 'layer';
-            
+
             menu.innerHTML = `
                 <div class="context-menu-item" onclick="bringToFront('${itemId}', '${type}')">Bring to Front</div>
                 <div class="context-menu-item" onclick="sendToBack('${itemId}', '${type}')">Send to Back</div>
@@ -1520,25 +1510,25 @@
                 <div class="context-menu-item" onclick="copyItem('${itemId}', '${type}')">Copy</div>
                 <div class="context-menu-item" onclick="deleteItem('${itemId}', '${type}')">Delete</div>
             `;
-            
+
             // Get canvas container position to adjust coordinates
             const canvasContainer = document.getElementById('canvas-container');
             const rect = canvasContainer.getBoundingClientRect();
-            
+
             // Adjust for canvas container offset and toolbar
             menu.style.left = `${x - rect.left}px`;
             menu.style.top = `${y - rect.top + 50}px`;  // +50 for toolbar height
             menu.classList.add('show');
         }
-        
+
         function hideContextMenu() {
             document.getElementById('context-menu').classList.remove('show');
         }
-        
+
         function bringToFront(itemId, type) {
             const allItems = [...state.layers, ...state.objects];
             const maxZ = Math.max(...allItems.map(i => i.z_index), 0);
-            
+
             if (type === 'object') {
                 const obj = state.objects.find(o => o.id === itemId);
                 if (obj) {
@@ -1558,11 +1548,11 @@
             }
             hideContextMenu();
         }
-        
+
         function sendToBack(itemId, type) {
             const allItems = [...state.layers, ...state.objects];
             const minZ = Math.min(...allItems.map(i => i.z_index), 0);
-            
+
             if (type === 'object') {
                 const obj = state.objects.find(o => o.id === itemId);
                 if (obj) {
@@ -1582,7 +1572,7 @@
             }
             hideContextMenu();
         }
-        
+
         function deleteItem(itemId, type) {
             if (type === 'object') {
                 const obj = state.objects.find(o => o.id === itemId);
@@ -1597,32 +1587,32 @@
             }
             hideContextMenu();
         }
-        
+
         function cutItem(itemId, type) {
             // Cut = copy then delete AND remove from source image
             const allItems = [...state.layers, ...state.objects];
-            
+
             if (type === 'object') {
                 const obj = state.objects.find(o => o.id === itemId);
                 if (obj) {
                     // Find the source layer
                     const sourceLayer = state.layers.find(l => l.id === obj.source_image_id);
-                    
+
                     if (!sourceLayer) {
                         showStatus('Cannot cut: source layer not found', true);
                         hideContextMenu();
                         return;
                     }
-                    
+
                     if (sourceLayer && obj.mask_base64) {
                         // Call backend to cut from source image using the existing mask
                         showStatus('Cutting from source image...');
-                        
+
                         // Debug: log mask info
                         console.log('Cut: object mask_base64 length:', obj.mask_base64 ? obj.mask_base64.length : 0);
                         console.log('Cut: source_image_id:', obj.source_image_id);
                         console.log('Cut: bounding_box:', obj.bounding_box);
-                        
+
                         fetch('/api/v1/segmentation/cut', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -1641,7 +1631,7 @@
                             if (data.success && data.image_base64) {
                                 showStatus('Processing cut...');
                                 console.log('Cut: Received image_base64, length:', data.image_base64.length);
-                                
+
                                 // Update the source layer's image
                                 console.log('Cut: Before update - sourceLayer.image_base64:', sourceLayer.image_base64 ? 'exists' : 'null');
                                 sourceLayer.image_base64 = data.image_base64;
@@ -1651,7 +1641,7 @@
                                     sourceLayer.image_path = sourceLayer.image_path.replace(/\.[^.]+$/, '.png');
                                 }
                                 console.log('Cut: Updated sourceLayer.image_path:', sourceLayer.image_path);
-                                
+
                                 // Create the copy first (before loading images)
                                 const copy = JSON.parse(JSON.stringify(obj));
                                 copy.id = `copy_${obj.id}_${Date.now()}`;
@@ -1659,10 +1649,10 @@
                                 copy.z_index = state.nextZIndex++;
                                 copy.cropped_image = null;
                                 copy.cropped_image_base64 = obj.cropped_image_base64;
-                                
+
                                 let imagesLoaded = 0;
                                 const totalImages = (data.image_base64 ? 1 : 0) + (copy.cropped_image_base64 ? 1 : 0);
-                                
+
                                 // Reload the source layer image
                                 if (data.image_base64) {
                                     const img = new Image();
@@ -1682,7 +1672,7 @@
                                 } else {
                                     imagesLoaded++;
                                 }
-                                
+
                                 // Load copy image if available
                                 if (copy.cropped_image_base64) {
                                     const copyImg = new Image();
@@ -1700,7 +1690,7 @@
                                 } else {
                                     imagesLoaded++;
                                 }
-                                
+
                                 function checkFinalizeCut() {
                                     console.log('Cut: checkFinalizeCut - imagesLoaded:', imagesLoaded, 'totalImages:', totalImages);
                                     if (imagesLoaded === totalImages) {
@@ -1708,10 +1698,10 @@
                                         // Add copy to objects
                                         state.objects.push(copy);
                                         state.activeObject = copy;
-                                        
+
                                         // Delete the original
                                         removeObject(obj);
-                                        
+
                                         saveHistory();
                                         updateLayersList();
                                         render();
@@ -1719,12 +1709,12 @@
                                         showStatus('Cut successful!');
                                     }
                                 }
-                                
+
                                 // If no images to load, finalize immediately
                                 if (totalImages === 0) {
                                     checkFinalizeCut();
                                 }
-                                
+
                                 // Timeout fallback in case images never load
                                 setTimeout(() => {
                                     if (imagesLoaded < totalImages) {
@@ -1754,7 +1744,7 @@
                 hideContextMenu();
                 return;
             }
-            
+
             function _fallbackCut(item, itemType) {
                 // Fallback: just copy and delete without modifying source
                 if (itemType === 'object' || !itemType) {
@@ -1763,7 +1753,7 @@
                     copy.position = [item.position[0] + 20, item.position[1] + 20];
                     copy.z_index = state.nextZIndex++;
                     copy.cropped_image = null;
-                    
+
                     if (copy.cropped_image_base64) {
                         const img = new Image();
                         img.onload = function() {
@@ -1772,7 +1762,7 @@
                         };
                         img.src = copy.cropped_image_base64;
                     }
-                    
+
                     state.objects.push(copy);
                     state.activeObject = copy;
                     removeObject(item);
@@ -1782,7 +1772,7 @@
                     copy.position = [item.position[0] + 20, item.position[1] + 20];
                     copy.z_index = state.nextZIndex++;
                     copy.image_obj = null;
-                    
+
                     if (copy.image_base64) {
                         const img = new Image();
                         img.onload = function() {
@@ -1791,21 +1781,21 @@
                         };
                         img.src = copy.image_base64;
                     }
-                    
+
                     state.layers.push(copy);
                     state.activeLayer = copy;
                     removeLayer(item);
                 }
-                
+
                 saveHistory();
                 updateLayersList();
                 render();
                 showStatus('Cut (source image unchanged)');
             }
-            
+
             hideContextMenu();
         }
-        
+
         function copyItem(itemId, type) {
             if (type === 'object') {
                 const obj = state.objects.find(o => o.id === itemId);
@@ -1815,7 +1805,7 @@
                     copy.position = [obj.position[0] + 20, obj.position[1] + 20];
                     copy.z_index = state.nextZIndex++;
                     copy.cropped_image = null;  // Reset - will be re-loaded
-                    
+
                     // Re-load the cropped image
                     if (copy.cropped_image_base64) {
                         const img = new Image();
@@ -1825,7 +1815,7 @@
                         };
                         img.src = copy.cropped_image_base64;
                     }
-                    
+
                     state.objects.push(copy);
                     state.activeObject = copy;
                     saveHistory();
@@ -1840,7 +1830,7 @@
                     copy.position = [layer.position[0] + 20, layer.position[1] + 20];
                     copy.z_index = state.nextZIndex++;
                     copy.image_obj = null;  // Reset - will be re-loaded
-                    
+
                     // Re-load the image
                     if (copy.image_base64) {
                         const img = new Image();
@@ -1850,7 +1840,7 @@
                         };
                         img.src = copy.image_base64;
                     }
-                    
+
                     state.layers.push(copy);
                     state.activeLayer = copy;
                     saveHistory();
@@ -1860,7 +1850,7 @@
             }
             hideContextMenu();
         }
-        
+
         function removeLayer(layer) {
             const index = state.layers.indexOf(layer);
             if (index > -1) {
@@ -1873,10 +1863,10 @@
                 updateLayersList();
             }
         }
-        
+
         function moveForward(itemId, type) {
             const allItems = [...state.layers, ...state.objects];
-            
+
             // Find the item
             let item = null;
             if (type === 'object') {
@@ -1884,16 +1874,16 @@
             } else if (type === 'layer') {
                 item = state.layers.find(l => l.id === itemId);
             }
-            
+
             if (item) {
                 // Sort all items by z-index
                 const sortedItems = [...allItems].sort((a, b) => a.z_index - b.z_index);
                 const currentIndex = sortedItems.findIndex(i => i.id === item.id);
-                
+
                 if (currentIndex < sortedItems.length - 1) {
                     // Find the next item in the sorted list
                     const nextItem = sortedItems[currentIndex + 1];
-                    
+
                     // Swap z-indexes
                     const tempZ = item.z_index;
                     item.z_index = nextItem.z_index;
@@ -1904,17 +1894,17 @@
                     item.z_index = maxZ + 1;
                     state.nextZIndex = maxZ + 2;
                 }
-                
+
                 render();
                 saveHistory();
                 updateLayersList();
             }
             hideContextMenu();
         }
-        
+
         function moveBackward(itemId, type) {
             const allItems = [...state.layers, ...state.objects];
-            
+
             // Find the item
             let item = null;
             if (type === 'object') {
@@ -1922,16 +1912,16 @@
             } else if (type === 'layer') {
                 item = state.layers.find(l => l.id === itemId);
             }
-            
+
             if (item) {
                 // Sort all items by z-index
                 const sortedItems = [...allItems].sort((a, b) => a.z_index - b.z_index);
                 const currentIndex = sortedItems.findIndex(i => i.id === item.id);
-                
+
                 if (currentIndex > 0) {
                     // Find the previous item in the sorted list
                     const prevItem = sortedItems[currentIndex - 1];
-                    
+
                     // Swap z-indexes
                     const tempZ = item.z_index;
                     item.z_index = prevItem.z_index;
@@ -1942,30 +1932,30 @@
                     item.z_index = minZ - 1;
                     state.nextZIndex = Math.max(state.nextZIndex, minZ);
                 }
-                
+
                 render();
                 saveHistory();
                 updateLayersList();
             }
             hideContextMenu();
         }
-        
+
         function updateLayersList() {
             const listEl = document.getElementById('layers-list');
-            
+
             // Combine and sort all items by z-index (back to front)
             const allItems = [...state.layers, ...state.objects].sort((a, b) => a.z_index - b.z_index);
-            
+
             listEl.innerHTML = allItems.map(item => {
                 const isLayer = item.type === 'image' || !item.type;
                 const isActive = isLayer ? state.activeLayer === item : state.activeObject === item;
                 const thumbnail = isLayer ? item.image_base64 : item.cropped_image_base64;
                 const name = item.name || (isLayer ? 'Image' : 'Object');
-                
+
                 return `
-                <div class="layer-item ${isActive ? 'active' : ''}" 
+                <div class="layer-item ${isActive ? 'active' : ''}"
                      onclick="${isLayer ? `selectLayer('${item.id}')` : `selectObject('${item.id}')`}">
-                    <img src="${thumbnail || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect width=%2240%22 height=%2240%22 fill=%22%23333%22/></svg>'}" 
+                    <img src="${thumbnail || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><rect width=%2240%22 height=%2240%22 fill=%22%23333%22/></svg>'}"
                          class="layer-thumbnail" alt="${name}">
                     <span class="layer-name">${name} ${isLayer ? '' : '(obj)'}</span>
                     <div class="layer-controls">
@@ -1977,21 +1967,21 @@
                 </div>
             `;}).join('');
         }
-        
+
         function selectLayer(layerId) {
             state.activeLayer = state.layers.find(l => l.id === layerId);
             state.activeObject = null;
             updateLayersList();
             render();
         }
-        
+
         function selectObject(objId) {
             state.activeObject = state.objects.find(o => o.id === objId);
             state.activeLayer = null;
             updateLayersList();
             render();
         }
-        
+
         function toggleVisibility(itemId, type) {
             if (type === 'layer') {
                 const layer = state.layers.find(l => l.id === itemId);
@@ -2009,7 +1999,7 @@
                 }
             }
         }
-        
+
         function deleteLayer(layerId) {
             const index = state.layers.findIndex(l => l.id === layerId);
             if (index > -1) {
@@ -2022,82 +2012,82 @@
                 render();
             }
         }
-        
+
         function render() {
             // Clear canvas
             state.ctx.fillStyle = '#1a1a2e';
             state.ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
-            
+
             // Apply scale and offset
             state.ctx.save();
             state.ctx.scale(state.scale, state.scale);
             state.ctx.translate(state.offset.x / state.scale, state.offset.y / state.scale);
-            
+
             // Combine all items and sort by z-index (back to front)
             const allItems = [...state.layers, ...state.objects].sort((a, b) => a.z_index - b.z_index);
-            
+
             // Draw all items in z-index order
             for (const item of allItems) {
                 if (!item.visible) continue;
-                
+
                 if (item.type === 'object' || item.cropped_image_base64) {
                     drawObject(item);
                 } else {
                     drawLayer(item);
                 }
             }
-            
+
             // Draw segmentation preview (if segmenting)
             if (state.isSegmenting && state.segmentationPreviewImg && state.segmentationLayer) {
                 drawSegmentationPreview();
             }
-            
+
             // Draw active item highlight
             if (state.activeObject) {
                 drawObjectHighlight(state.activeObject);
             } else if (state.activeLayer) {
                 drawLayerHighlight(state.activeLayer);
             }
-            
+
             state.ctx.restore();
         }
-        
+
         function drawLayerHighlight(layer) {
             if (!layer.width || !layer.height) return;
-            
+
             state.ctx.save();
             state.ctx.translate(layer.position[0], layer.position[1]);
             state.ctx.rotate(layer.rotation * Math.PI / 180);
             state.ctx.scale(layer.scale[0], layer.scale[1]);
-            
+
             // Draw highlight
             state.ctx.strokeStyle = '#ffff00';
             state.ctx.lineWidth = 3;
             state.ctx.setLineDash([5, 5]);
             state.ctx.strokeRect(0, 0, layer.width, layer.height);
             state.ctx.setLineDash([]);
-            
+
             state.ctx.restore();
         }
-        
+
         function drawSegmentationPreview() {
             if (!state.segmentationPreviewMaskImg || !state.segmentationLayer || !state.segmentationPreviewBbox) return;
-            
+
             const layer = state.segmentationLayer;
             const bbox = state.segmentationPreviewBbox;
-            
+
             state.ctx.save();
             state.ctx.translate(layer.position[0], layer.position[1]);
             state.ctx.rotate(layer.rotation * Math.PI / 180);
             state.ctx.scale(layer.scale[0], layer.scale[1]);
-            
+
             // Draw the red preview mask at the bounding box position
             // The preview mask is already cropped to bbox dimensions, so draw at bbox origin
             state.ctx.drawImage(state.segmentationPreviewMaskImg, bbox.x1, bbox.y1);
-            
+
             state.ctx.restore();
         }
-        
+
         function drawLayer(layer) {
             // Apply layer transformations
             state.ctx.save();
@@ -2105,7 +2095,7 @@
             state.ctx.scale(layer.scale[0], layer.scale[1]);
             state.ctx.rotate(layer.rotation * Math.PI / 180);
             state.ctx.globalAlpha = layer.opacity;
-            
+
             // Draw the image if available
             if (layer.image_base64) {
                 // Check if image is already loaded
@@ -2115,7 +2105,7 @@
                     // Draw placeholder while loading
                     state.ctx.fillStyle = 'rgba(100, 100, 255, 0.3)';
                     state.ctx.fillRect(0, 0, layer.width, layer.height);
-                    
+
                     // Load image async
                     const img = new Image();
                     img.onload = function() {
@@ -2129,10 +2119,10 @@
                 state.ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
                 state.ctx.fillRect(0, 0, layer.width, layer.height);
             }
-            
+
             state.ctx.globalAlpha = 1.0;
             state.ctx.restore();
-            
+
             // Draw layer name (not transformed)
             state.ctx.save();
             state.ctx.translate(layer.position[0], layer.position[1]);
@@ -2141,16 +2131,16 @@
             state.ctx.fillText(layer.name, 5, 15);
             state.ctx.restore();
         }
-        
+
         function drawObject(obj) {
             if (!obj.cropped_image_base64 && !obj.mask_base64) return;
-            
+
             // Apply object transformations
             state.ctx.save();
             state.ctx.translate(obj.position[0], obj.position[1]);
             state.ctx.rotate(obj.rotation * Math.PI / 180);
             state.ctx.scale(obj.scale[0], obj.scale[1]);
-            
+
             // Draw the cropped image (with transparency)
             if (obj.cropped_image && obj.cropped_image.complete && obj.bounding_box) {
                 const bbox = obj.bounding_box;
@@ -2167,65 +2157,65 @@
                 const bbox = obj.bounding_box;
                 state.ctx.fillStyle = 'rgba(255, 107, 107, 0.3)';
                 state.ctx.fillRect(
-                    bbox.x1, bbox.y1, 
-                    bbox.x2 - bbox.x1, 
+                    bbox.x1, bbox.y1,
+                    bbox.x2 - bbox.x1,
                     bbox.y2 - bbox.y1
                 );
             }
-            
+
             state.ctx.restore();
         }
-        
+
         function drawObjectHighlight(obj) {
             if (!obj.bounding_box) return;
-            
+
             const bbox = obj.bounding_box;
-            
+
             state.ctx.save();
             state.ctx.translate(obj.position[0], obj.position[1]);
             state.ctx.rotate(obj.rotation * Math.PI / 180);
             state.ctx.scale(obj.scale[0], obj.scale[1]);
-            
+
             // Draw highlight
             state.ctx.strokeStyle = '#ffff00';
             state.ctx.lineWidth = 3;
             state.ctx.setLineDash([5, 5]);
             state.ctx.strokeRect(
-                bbox.x1 - 5, bbox.y1 - 5, 
-                bbox.x2 - bbox.x1 + 10, 
+                bbox.x1 - 5, bbox.y1 - 5,
+                bbox.x2 - bbox.x1 + 10,
                 bbox.y2 - bbox.y1 + 10
             );
             state.ctx.setLineDash([]);
-            
+
             state.ctx.restore();
         }
-        
+
         // OLD PREVIEW FUNCTIONS (deprecated - one-click doesn't need preview)
         // function drawSegmentationPreview() { ... }
         // function drawSegmentationPoints() { ... }
-        
+
         function saveHistory() {
             // Save current state to history
             const currentState = {
                 layers: JSON.parse(JSON.stringify(state.layers)),
                 objects: JSON.parse(JSON.stringify(state.objects))
             };
-            
+
             // If we're not at the end of history, truncate
             if (state.historyIndex < state.history.length - 1) {
                 state.history = state.history.slice(0, state.historyIndex + 1);
             }
-            
+
             state.history.push(currentState);
             state.historyIndex = state.history.length - 1;
-            
+
             // Limit history size
             if (state.history.length > 50) {
                 state.history.shift();
                 state.historyIndex--;
             }
         }
-        
+
         function undo() {
             if (state.historyIndex > 0) {
                 state.historyIndex--;
@@ -2237,7 +2227,7 @@
                 render();
             }
         }
-        
+
         function redo() {
             if (state.historyIndex < state.history.length - 1) {
                 state.historyIndex++;
@@ -2249,7 +2239,7 @@
                 render();
             }
         }
-        
+
         function clearCanvas() {
             if (confirm('Are you sure you want to clear the canvas?')) {
                 state.layers = [];
@@ -2263,24 +2253,24 @@
                 showStatus('Canvas cleared');
             }
         }
-        
+
         function exportProject() {
             showStatus('Exporting...');
-            
+
             // Get all visible items (layers and objects)
             const allItems = [...state.layers, ...state.objects]
                 .filter(item => item.visible)
                 .sort((a, b) => a.z_index - b.z_index);
-            
+
             if (allItems.length === 0) {
                 showStatus('Nothing to export', true);
                 return;
             }
-            
+
             // Calculate the minimum bounding box that contains all items
             let minX = Infinity, minY = Infinity;
             let maxX = -Infinity, maxY = -Infinity;
-            
+
             for (const item of allItems) {
                 // Calculate the transformed bounding box for this item
                 const itemBounds = getItemBounds(item);
@@ -2289,38 +2279,38 @@
                 maxX = Math.max(maxX, itemBounds.maxX);
                 maxY = Math.max(maxY, itemBounds.maxY);
             }
-            
+
             // If no bounds found (shouldn't happen), use a default size
             if (minX === Infinity) {
                 minX = minY = 0;
                 maxX = maxY = 100;
             }
-            
+
             // Calculate canvas size
             const width = Math.ceil(maxX - minX);
             const height = Math.ceil(maxY - minY);
-            
+
             // Create a temporary canvas for export with transparent background
             const exportCanvas = document.createElement('canvas');
             const exportCtx = exportCanvas.getContext('2d');
-            
+
             exportCanvas.width = width;
             exportCanvas.height = height;
-            
+
             // Clear with transparent background
             exportCtx.clearRect(0, 0, width, height);
-            
+
             // Draw all visible items onto the export canvas
             // We need to translate each item by the offset to fit in the bounding box
             for (const item of allItems) {
                 exportCtx.save();
-                
+
                 // Translate item to be relative to the bounding box origin
                 exportCtx.translate(item.position[0] - minX, item.position[1] - minY);
                 exportCtx.rotate(item.rotation * Math.PI / 180);
                 exportCtx.scale(item.scale[0], item.scale[1]);
                 exportCtx.globalAlpha = item.opacity;
-                
+
                 if (item.type === 'object' || item.cropped_image_base64) {
                     // Draw object
                     if (item.cropped_image && item.cropped_image.complete && item.bounding_box) {
@@ -2339,11 +2329,11 @@
                         0, 0, item.width, item.height
                     );
                 }
-                
+
                 exportCtx.globalAlpha = 1.0;
                 exportCtx.restore();
             }
-            
+
             // Convert to blob and download as PNG (which supports transparency)
             exportCanvas.toBlob(function(blob) {
                 const url = window.URL.createObjectURL(blob);
@@ -2357,13 +2347,13 @@
                 showStatus('Export complete!');
             }, 'image/png');
         }
-        
+
         function getItemBounds(item) {
             // Calculate the bounding box of an item after all transformations
             // This is a simplified approximation - we calculate the corners
-            
+
             let corners = [];
-            
+
             if (item.type === 'object' && item.bounding_box) {
                 // For objects, use their bounding box
                 const bbox = item.bounding_box;
@@ -2382,45 +2372,45 @@
                     { x: 0, y: item.height }
                 ];
             }
-            
+
             // Apply scale
             for (const corner of corners) {
                 corner.x *= item.scale[0];
                 corner.y *= item.scale[1];
             }
-            
+
             // Apply rotation
             const angleRad = item.rotation * Math.PI / 180;
             const cosA = Math.cos(angleRad);
             const sinA = Math.sin(angleRad);
-            
+
             for (const corner of corners) {
                 const rotatedX = corner.x * cosA - corner.y * sinA;
                 const rotatedY = corner.x * sinA + corner.y * cosA;
                 corner.x = rotatedX;
                 corner.y = rotatedY;
             }
-            
+
             // Apply translation (position)
             for (const corner of corners) {
                 corner.x += item.position[0];
                 corner.y += item.position[1];
             }
-            
+
             // Find min/max
             let minX = Infinity, minY = Infinity;
             let maxX = -Infinity, maxY = -Infinity;
-            
+
             for (const corner of corners) {
                 minX = Math.min(minX, corner.x);
                 minY = Math.min(minY, corner.y);
                 maxX = Math.max(maxX, corner.x);
                 maxY = Math.max(maxY, corner.y);
             }
-            
+
             return { minX, minY, maxX, maxY };
         }
-        
+
         function checkSAM3Status() {
             fetch('/api/v1/segmentation/model-info')
                 .then(response => response.json())
@@ -2435,13 +2425,13 @@
                     showStatus('Failed to check SAM3 status', true);
                 });
         }
-        
+
         function showStatus(message, isError = false) {
             const statusEl = document.getElementById('status-message');
             statusEl.textContent = message;
             statusEl.style.color = isError ? '#ff6b6b' : '#4a8ac2';
         }
-        
+
         function loadProject() {
             // Try to load the last saved project
             fetch('/api/v1/project/list')
@@ -2449,9 +2439,9 @@
                 .then(data => {
                     if (data.success && data.projects && data.projects.length > 0) {
                         // Load the most recent project
-                        const latest = data.projects.reduce((a, b) => 
+                        const latest = data.projects.reduce((a, b) =>
                             new Date(a.updated_at) > new Date(b.updated_at) ? a : b);
-                        
+
                         return fetch(`/api/v1/project/load?filepath=${encodeURIComponent(latest.filepath)}`);
                     }
                     return Promise.resolve({});
@@ -2476,7 +2466,7 @@
                     console.error('Failed to load project:', error);
                 });
         }
-        
+
         // Modal functions
         function showModal(title, content, confirmText = 'OK') {
             document.getElementById('modal-title').textContent = title;
@@ -2484,15 +2474,15 @@
             document.getElementById('modal-confirm').textContent = confirmText;
             document.getElementById('modal').classList.add('show');
         }
-        
+
         function closeModal() {
             document.getElementById('modal').classList.remove('show');
         }
-        
+
         function confirmModal() {
             closeModal();
         }
-        
+
         // Initialize when DOM is loaded
         document.addEventListener('DOMContentLoaded', init);
     </script>
