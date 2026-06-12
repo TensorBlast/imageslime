@@ -1249,6 +1249,18 @@
                     }
                     break;
                 
+                case 'C':
+                    // C key: Cut selected item (without CMD/Ctrl)
+                    if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                        e.preventDefault();
+                        if (state.activeObject) {
+                            cutItem(state.activeObject.id, 'object');
+                        } else if (state.activeLayer) {
+                            showStatus('Select an object to cut, or use the context menu on a layer.', true);
+                        }
+                    }
+                    break;
+                
                 case 'x':
                     // CMD+X or Ctrl+X: Cut selected item (copy then delete AND remove from source)
                     if (e.metaKey || e.ctrlKey) {
