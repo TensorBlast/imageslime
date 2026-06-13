@@ -674,7 +674,7 @@ class SAM3SegmentationService:
         """
         try:
             # Load the original image
-            image = cv2.imread(image_path)
+            image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
             if image is None:
                 logger.error(f"Failed to load image: {image_path}")
                 return None
@@ -697,7 +697,7 @@ class SAM3SegmentationService:
                 image_rgba = cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
             
             # Apply mask: set alpha to 0 (transparent) where mask is 255
-            image_rgba[:, :, 3] = np.where(mask > 0, 0, image_rgba[:, :, 3])
+            image_rgba[:, :, 3] = np.where((mask > 0), 0, image_rgba[:, :, 3])
             logger.info(f"Cut: Applied mask - transparent pixels: {np.sum(mask > 0)}, total pixels: {mask.size}")
             
             # If fill color is provided, fill the region with that color
